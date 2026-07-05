@@ -74,33 +74,33 @@
 
 ### Tests for User Story 1
 
-- [ ] T041 [P] [US1] Add contract tests for `GET /v1/strategies` and `POST /v1/quotes` in `apps/api/tests/contract/quotes.test.ts`
-- [ ] T042 [P] [US1] Add contract tests for `POST /v1/deposit-intents` and `GET /v1/deposit-intents/{intentId}` in `apps/api/tests/contract/deposit-intents.test.ts`
-- [ ] T043 [P] [US1] Add integration test for quote-to-active-position flow in `apps/api/tests/integration/deposit-flow.test.ts`
-- [ ] T044 [P] [US1] Add worker processor test for deposit observation and activation in `apps/worker/tests/deposit-processor.test.ts`
+- [x] T041 [P] [US1] Add contract tests for `GET /v1/strategies` and `POST /v1/quotes` in `apps/api/tests/contract/quotes.test.ts`
+- [x] T042 [P] [US1] Add contract tests for `POST /v1/deposit-intents` and `GET /v1/deposit-intents/{intentId}` in `apps/api/tests/contract/deposit-intents.test.ts`
+- [x] T043 [P] [US1] Add integration test for quote-to-active-position flow in `apps/api/tests/integration/deposit-flow.test.ts`
+- [x] T044 [P] [US1] Add worker processor test for deposit observation and activation in `apps/worker/tests/deposit-processor.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T045 [P] [US1] Create Strategy repository functions in `packages/core/src/repositories/strategy-repository.ts`
-- [ ] T046 [P] [US1] Create Quote repository functions in `packages/core/src/repositories/quote-repository.ts`
-- [ ] T047 [P] [US1] Create DepositIntent repository functions in `packages/core/src/repositories/deposit-intent-repository.ts`
-- [ ] T048 [P] [US1] Create WalletUser repository functions in `packages/core/src/repositories/wallet-user-repository.ts`
-- [ ] T049 [US1] Implement strategy listing service in `apps/api/src/services/strategy-service.ts`
-- [ ] T050 [US1] Implement quote service with policy, amount, strategy, and expiration checks in `apps/api/src/services/quote-service.ts`
-- [ ] T051 [US1] Implement deposit intent service with idempotency and user instruction generation in `apps/api/src/services/deposit-intent-service.ts`
-- [ ] T052 [US1] Implement position creation service for completed deposits in `apps/api/src/services/position-service.ts`
-- [ ] T053 [US1] Implement `GET /v1/strategies` route in `apps/api/src/routes/strategies.ts`
-- [ ] T054 [US1] Implement `POST /v1/quotes` route in `apps/api/src/routes/quotes.ts`
-- [ ] T055 [US1] Implement `POST /v1/deposit-intents` route in `apps/api/src/routes/deposit-intents.ts`
-- [ ] T056 [US1] Implement `GET /v1/deposit-intents/{intentId}` route in `apps/api/src/routes/deposit-intents.ts`
-- [ ] T057 [US1] Implement deposit observation job producer in `apps/api/src/services/deposit-job-service.ts`
-- [ ] T058 [US1] Implement deposit observation worker processor in `apps/worker/src/processors/deposit-observation-processor.ts`
-- [ ] T059 [US1] Implement mocked XRPL deposit monitor for test environment in `apps/worker/src/monitors/xrpl-deposit-monitor.ts`
-- [ ] T060 [US1] Implement mocked Flare activation adapter for test environment in `apps/worker/src/processors/flare-activation-processor.ts`
-- [ ] T061 [US1] Emit lifecycle events for quote, deposit intent, observation, activation, failure, expiration, and position creation in `apps/api/src/services/deposit-intent-service.ts`
-- [ ] T062 [US1] Add basic dashboard deposit intent list and detail pages in `apps/dashboard/app/intents/page.tsx` and `apps/dashboard/app/intents/[intentId]/page.tsx`
-- [ ] T063 [US1] Add dashboard API client for strategies, quotes, and deposit intents in `apps/dashboard/lib/flarerail-api.ts`
-- [ ] T064 [US1] Add manual validation notes for US1 to `docs/flarerail/deposit-flow.md`
+- [x] T045 [P] [US1] Create Strategy repository functions in `packages/core/src/repositories/strategy-repository.ts`
+- [x] T046 [P] [US1] Create Quote repository functions in `packages/core/src/repositories/quote-repository.ts`
+- [x] T047 [P] [US1] Create DepositIntent repository functions in `packages/core/src/repositories/deposit-intent-repository.ts`
+- [x] T048 [P] [US1] Create WalletUser repository functions in `packages/core/src/repositories/wallet-user-repository.ts`
+- [x] T049 [US1] Implement strategy listing service in `apps/api/src/services/strategy-service.ts`
+- [x] T050 [US1] Implement quote service with policy, amount, strategy, and expiration checks in `apps/api/src/services/quote-service.ts`
+- [x] T051 [US1] Implement deposit intent service with idempotency and user instruction generation in `apps/api/src/services/deposit-intent-service.ts`
+- [x] T052 [US1] Implement position creation service for completed deposits in `apps/api/src/services/position-service.ts`
+- [x] T053 [US1] Implement `GET /v1/strategies` route in `apps/api/src/routes/strategies.ts`
+- [x] T054 [US1] Implement `POST /v1/quotes` route in `apps/api/src/routes/quotes.ts`
+- [x] T055 [US1] Implement `POST /v1/deposit-intents` route in `apps/api/src/routes/deposit-intents.ts`
+- [x] T056 [US1] Implement `GET /v1/deposit-intents/{intentId}` route in `apps/api/src/routes/deposit-intents.ts`
+- [x] T057 [US1] Implement deposit observation job producer in `apps/api/src/services/deposit-job-service.ts`
+- [x] T058 [US1] Implement deposit observation worker processor in `apps/worker/src/processors/deposit-observation-processor.ts`
+- [x] T059 [US1] Implement mocked XRPL deposit monitor for test environment in `apps/worker/src/monitors/xrpl-deposit-monitor.ts`
+- [x] T060 [US1] Implement mocked Flare activation adapter for test environment in `apps/worker/src/processors/flare-activation-processor.ts`
+- [x] T061 [US1] Emit lifecycle events for quote, deposit intent, observation, activation, failure, expiration, and position creation in `apps/api/src/services/deposit-intent-service.ts`
+- [x] T062 [US1] Add basic dashboard deposit intent list and detail pages in `apps/dashboard/app/intents/page.tsx` and `apps/dashboard/app/intents/[intentId]/page.tsx`
+- [x] T063 [US1] Add dashboard API client for strategies, quotes, and deposit intents in `apps/dashboard/lib/flarerail-api.ts`
+- [x] T064 [US1] Add manual validation notes for US1 to `docs/flarerail/deposit-flow.md`
 
 **Checkpoint**: User Story 1 is independently functional and demoable as the MVP.
 

@@ -1,17 +1,11 @@
+import { QueueName } from "@flarerail/core";
+import type { QueueName as QueueNameType } from "@flarerail/core";
 import { Queue, Worker, type ConnectionOptions, type JobsOptions } from "bullmq";
 import type { WorkerConfig } from "@flarerail/config";
 
-// ── Queue names ──────────────────────────────
-export const QueueName = {
-  DepositObservation: "deposit.observation",
-  DepositActivation: "deposit.activation",
-  ExitProcessing: "exit.processing",
-  RedemptionRecovery: "redemption.recovery",
-  WebhookDelivery: "webhook.delivery",
-  Maintenance: "maintenance",
-} as const;
-
-export type QueueName = (typeof QueueName)[keyof typeof QueueName];
+// Re-export QueueName for backward compatibility
+export { QueueName };
+export type { QueueName as QueueNameType };
 
 // ── Redis connection ─────────────────────────
 
@@ -24,7 +18,7 @@ export function createRedisConnection(config: Pick<WorkerConfig, "REDIS_URL">): 
 
 // ── Queue helpers ────────────────────────────
 
-export function createQueue(name: QueueName, config: Pick<WorkerConfig, "REDIS_URL">): Queue {
+export function createQueue(name: QueueNameType, config: Pick<WorkerConfig, "REDIS_URL">): Queue {
   const connection = createRedisConnection(config);
   return new Queue(name, {
     connection,
@@ -46,7 +40,7 @@ export function createQueue(name: QueueName, config: Pick<WorkerConfig, "REDIS_U
 }
 
 export function createWorker(
-  name: QueueName,
+  name: QueueNameType,
   processor: (job: any) => Promise<void>,
   config: Pick<WorkerConfig, "REDIS_URL" | "WORKER_CONCURRENCY">,
 ): Worker {

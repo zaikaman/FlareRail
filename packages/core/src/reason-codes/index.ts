@@ -119,6 +119,46 @@ export const EXPOSURE_LIMIT_EXCEEDED: ReasonCodeEntry = {
 };
 
 // ── Quote / Deposit ─────────────────────────────
+export const QUOTE_AVAILABLE: ReasonCodeEntry = {
+  code: "QUOTE_AVAILABLE",
+  defaultMessage: "Quote available for the selected strategy.",
+  httpStatus: 200,
+  severity: "info",
+  retryable: false,
+};
+
+export const DEPOSIT_WAITING_FOR_USER: ReasonCodeEntry = {
+  code: "DEPOSIT_WAITING_FOR_USER",
+  defaultMessage: "Waiting for the XRP payment instruction to be completed.",
+  httpStatus: 202,
+  severity: "info",
+  retryable: false,
+};
+
+export const DEPOSIT_OBSERVED: ReasonCodeEntry = {
+  code: "DEPOSIT_OBSERVED",
+  defaultMessage: "The XRP payment has been observed on the XRPL.",
+  httpStatus: 200,
+  severity: "info",
+  retryable: false,
+};
+
+export const DEPOSIT_ACTIVATING: ReasonCodeEntry = {
+  code: "DEPOSIT_ACTIVATING",
+  defaultMessage: "The deposit is being activated on Flare.",
+  httpStatus: 200,
+  severity: "info",
+  retryable: false,
+};
+
+export const POSITION_ACTIVE: ReasonCodeEntry = {
+  code: "POSITION_ACTIVE",
+  defaultMessage: "Position is active.",
+  httpStatus: 200,
+  severity: "info",
+  retryable: false,
+};
+
 export const QUOTE_EXPIRED: ReasonCodeEntry = {
   code: "QUOTE_EXPIRED",
   defaultMessage: "The quote has expired.",
@@ -233,6 +273,11 @@ export const reasonCodes: Record<string, ReasonCodeEntry> = {
   STRATEGY_UNAVAILABLE,
   CAPACITY_UNAVAILABLE,
   EXPOSURE_LIMIT_EXCEEDED,
+  QUOTE_AVAILABLE,
+  DEPOSIT_WAITING_FOR_USER,
+  DEPOSIT_OBSERVED,
+  DEPOSIT_ACTIVATING,
+  POSITION_ACTIVE,
   QUOTE_EXPIRED,
   QUOTE_UNAVAILABLE,
   DEPOSIT_EXPIRED,
