@@ -1,0 +1,312 @@
+---
+title: FtsoV2Interface
+sidebar_position: 1
+description: Primary interface for interacting with FTSOv2.
+---
+
+import RemixEmbed from "@site/src/components/RemixEmbed";
+import CodeBlock from "@theme/CodeBlock";
+import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedById.sol";
+import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
+import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsById.sol";
+import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
+import FTSOV2AnchorConsumer from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2AnchorConsumer.sol";
+
+Primary interface for interacting with FTSOv2.
+This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
+
+Sourced from `FtsoV2Interface.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/LTS/FtsoV2Interface.sol).
+
+## Functions
+
+### getFeedById
+
+Returns stored data of a feed.
+A fee (calculated by the FeeCalculator contract) may need to be paid.
+
+```solidity
+function getFeedById(
+    bytes21 _feedId
+) external payable returns (
+    uint256 _value,
+    int8 _decimals,
+    uint64 _timestamp
+);
+```
+
+#### Parameters
+
+- `_feedId`: The id of the feed.
+
+#### Returns
+
+- `_value`: The value for the requested feed.
+- `_decimals`: The decimal places for the requested feed.
+- `_timestamp`: The timestamp of the last update.
+
+<details>
+<summary>Sample contract usage</summary>
+
+<CodeBlock language="solidity" title="FTSOV2FeedById.sol">
+  {FTSOV2FeedById}
+</CodeBlock>
+
+</details>
+
+<RemixEmbed fileName="FTSOV2FeedById.sol">Open sample in Remix</RemixEmbed>
+
+### getFeedByIdInWei
+
+Returns value in wei and timestamp of a feed.
+A fee (calculated by the FeeCalculator contract) may need to be paid.
+
+```solidity
+function getFeedByIdInWei(
+    bytes21 _feedId
+) external payable returns (
+    uint256 _value,
+    uint64 _timestamp
+);
+```
+
+#### Parameters
+
+- `_feedId`: The id of the feed.
+
+#### Returns
+
+- `_value`: The value for the requested feed in wei (i.e. with 18 decimal places).
+- `_timestamp`: The timestamp of the last update.
+
+<details>
+<summary>Sample contract usage</summary>
+
+<CodeBlock language="solidity" title="FTSOV2FeedByIdWei.sol">
+  {FTSOV2FeedByIdWei}
+</CodeBlock>
+
+</details>
+
+<RemixEmbed fileName="FTSOV2FeedByIdWei.sol">Open sample in Remix</RemixEmbed>
+
+### getFeedsById
+
+Returns stored data of each feed.
+A fee (calculated by the FeeCalculator contract) may need to be paid.
+
+```solidity
+function getFeedsById(
+    bytes21[] _feedIds
+) external payable returns (
+    uint256[] _values,
+    int8[] _decimals,
+    uint64 _timestamp
+);
+```
+
+#### Parameters
+
+- `_feedIds`: The list of feed ids.
+
+#### Returns
+
+- `_values`: The list of values for the requested feeds.
+- `_decimals`: The list of decimal places for the requested feeds.
+- `_timestamp`: The timestamp of the last update.
+
+<details>
+<summary>Sample contract usage</summary>
+
+<CodeBlock language="solidity" title="FTSOV2FeedsById.sol">
+  {FTSOV2FeedsById}
+</CodeBlock>
+
+</details>
+
+<RemixEmbed fileName="FTSOV2FeedsById.sol">Open sample in Remix</RemixEmbed>
+
+### getFeedsByIdInWei
+
+Returns value of each feed and a timestamp.
+For some feeds, a fee (calculated by the FeeCalculator contract) may need to be paid.
+
+```solidity
+function getFeedsByIdInWei(
+    bytes21[] _feedIds
+) external payable returns (
+    uint256[] _values,
+    uint64 _timestamp
+);
+```
+
+#### Parameters
+
+- `_feedIds`: Ids of the feeds.
+
+#### Returns
+
+- `_values`: The list of values for the requested feeds in wei (i.e. with 18 decimal places).
+- `_timestamp`: The timestamp of the last update.
+
+<details>
+<summary>Sample contract usage</summary>
+
+<CodeBlock language="solidity" title="FTSOV2FeedsByIdWei.sol">
+  {FTSOV2FeedsByIdWei}
+</CodeBlock>
+
+</details>
+
+<RemixEmbed fileName="FTSOV2FeedsByIdWei.sol">Open sample in Remix</RemixEmbed>
+
+### getFtsoProtocolId
+
+Returns the FTSO protocol id.
+
+```solidity
+function getFtsoProtocolId() external view returns (uint256);
+```
+
+### getSupportedFeedIds
+
+Returns the list of currently supported (active) feed ids.
+To enumerate every feed id that has ever existed, combine the result with [`getFeedIdChanges`](#getfeedidchanges).
+
+```solidity
+function getSupportedFeedIds()
+    external view
+    returns (bytes21[] memory _feedIds);
+```
+
+#### Returns
+
+- `_feedIds`: The list of supported feed ids.
+
+### getFeedIdChanges
+
+Returns the list of feed id changes (old/new pairs).
+
+```solidity
+function getFeedIdChanges()
+    external view
+    returns (FeedIdChange[] memory _feedIdChanges);
+```
+
+#### Returns
+
+- `_feedIdChanges`: The list of changed feed id pairs.
+
+### calculateFeeById
+
+Calculates the fee for fetching a single feed.
+
+```solidity
+function calculateFeeById(bytes21 _feedId)
+    external view
+    returns (uint256 _fee);
+```
+
+#### Parameters
+
+- `_feedId`: The id of the feed.
+
+#### Returns
+
+- `_fee`: The fee for fetching the feed.
+
+### calculateFeeByIds
+
+Calculates the fee for fetching multiple feeds at once.
+
+```solidity
+function calculateFeeByIds(bytes21[] memory _feedIds)
+    external view
+    returns (uint256 _fee);
+```
+
+#### Parameters
+
+- `_feedIds`: The list of feed ids.
+
+#### Returns
+
+- `_fee`: The combined fee.
+
+### verifyFeedData
+
+Checks if the feed data is valid (i.e. is part of the confirmed Merkle tree).
+
+```solidity
+function verifyFeedData(
+    struct FtsoV2Interface.FeedDataWithProof _feedData
+) external view returns (
+    bool
+);
+```
+
+#### Parameters
+
+- `_feedData`: Structure containing data about the feed (FeedData structure) and Merkle proof.
+
+#### Returns
+
+- `_0`: true if the feed data is valid.
+
+<details>
+<summary>Sample contract usage</summary>
+
+<CodeBlock language="solidity" title="FTSOV2AnchorConsumer.sol">
+  {FTSOV2AnchorConsumer}
+</CodeBlock>
+
+</details>
+
+<RemixEmbed fileName="FTSOV2AnchorConsumer.sol">Open sample in Remix</RemixEmbed>
+
+## Structures
+
+### FeedData
+
+Feed data structure
+
+```solidity
+struct FeedData {
+  uint32 votingRoundId;
+  bytes21 id;
+  int32 value;
+  uint16 turnoutBIPS;
+  int8 decimals;
+}
+```
+
+### FeedDataWithProof
+
+Feed data with proof structure
+
+```solidity
+struct FeedDataWithProof {
+    bytes32[] proof;
+    struct FtsoV2Interface.FeedData body;
+}
+```
+
+### FeedIdChange
+
+Pair representing a feed id rename (e.g. when a feed is relabelled).
+
+```solidity
+struct FeedIdChange {
+    bytes21 oldFeedId;
+    bytes21 newFeedId;
+}
+```
+
+## Events
+
+### FeedIdChanged
+
+Emitted when a feed id is changed (e.g. when a feed is renamed).
+
+```solidity
+event FeedIdChanged(bytes21 indexed oldFeedId, bytes21 indexed newFeedId);
+```

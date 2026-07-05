@@ -1,0 +1,58 @@
+---
+title: AddressValidity
+description: Validates if a string is a legitimate external blockchain address.
+keywords: [fdc, oracle, flare-data-connector, flare-network]
+sidebar_position: 4
+---
+
+import Addresses from "./_addresses.mdx";
+
+Assertion whether a given string represents a **valid address** on an external blockchain.
+
+## Supported chains
+
+| Network Type | Supported Chains                                       |
+| ------------ | ------------------------------------------------------ |
+| **Mainnet**  | `BTC` (Bitcoin), `DOGE` (Dogecoin), `XRP` (XRP Ledger) |
+| **Testnet**  | `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`  |
+
+## Request
+
+| Field        | Solidity Type | Description                   |
+| ------------ | ------------- | ----------------------------- |
+| `addressStr` | `string`      | The address string to verify. |
+
+## Response
+
+| Field                 | Solidity Type | Description                                                                                     |
+| --------------------- | ------------- | ----------------------------------------------------------------------------------------------- |
+| `isValid`             | `bool`        | Indicates whether the provided address is valid.                                                |
+| `standardAddress`     | `string`      | The standardized form of the validated address if `isValid`; otherwise, an empty string.        |
+| `standardAddressHash` | `bytes32`     | The `keccak256` hash of the `standardAddress` if `isValid`; otherwise, a zero `bytes32` string. |
+
+## Verification process
+
+The address is verified against the validity criteria specific to the chain identified by `sourceId`.
+If the address meets all criteria:
+
+1. `isValid` is set to `true`.
+2. The `standardAddress` and its `standardAddressHash` are computed.
+
+If the address is invalid:
+
+- `isValid` is set to `false`.
+- The `standardAddress` is empty and `standardAddressHash` is zero value.
+
+:::note[Lowest used timestamp]
+
+For the `lowestUsedTimestamp` parameter, the value `0xffffffffffffffff` (equivalent to $ 2^{64} - 1 $) in hexadecimal) is used as the default.
+
+:::
+
+## Address validity criteria
+
+<Addresses />
+
+## Contract Interface
+
+For the complete interface definition, see [`IAddressValidity`](/fdc/reference/IAddressValidity.mdx).

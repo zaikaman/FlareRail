@@ -1,0 +1,70 @@
+.cardContainer {
+  --ifm-link-color: var(--ifm-color-emphasis-800);
+  --ifm-link-hover-color: var(--ifm-color-emphasis-700);
+  --ifm-link-hover-decoration: none;
+  position: relative;
+  overflow: visible;
+  transition: all var(--ifm-transition-fast) ease;
+  transition-property: border, box-shadow;
+  color: var(--ifm-color-primary);
+  box-shadow: none;
+  background-color: var(--ifm-card-background-color);
+}
+[data-theme="dark"] .cardContainer {
+  color: #ffffff;
+}
+
+.cardContainer:hover {
+  color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.2);
+}
+[data-theme="dark"] .cardContainer:hover {
+  color: #ffffff;
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 3px 6px 0 rgba(255, 255, 255, 0.2);
+}
+
+.cardContainer *:last-child {
+  margin-bottom: 0;
+}
+
+.cardTitle {
+  font-size: 1.2rem;
+  font-weight: var(--ifm-card-font-weight);
+  color: var(--ifm-color-primary);
+}
+[data-theme="dark"] .cardTitle {
+  color: #ffffff;
+}
+.cardDescription {
+  font-size: 0.8rem;
+  color: var(--ifm-card-description-color);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cardTag {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background-color: var(--ifm-color-primary);
+  color: var(--ifm-font-color-base-inverse);
+}
+[data-theme="dark"] .cardTag {
+  background-color: var(--ifm-color-primary);
+  color: #ffffff;
+}
+
+.cardArrow {
+  color: #000000;
+}

@@ -1,0 +1,29 @@
+{{h}} {{name}}
+
+{{{linkify natspec.notice false}}}
+
+{{#if natspec.dev}}
+{{{linkify natspec.dev false}}}
+{{/if}}
+
+{{#if signature}}
+```solidity
+{{{pretty_signature}}}
+```
+{{/if}}
+
+{{#if natspec.params}}
+#### Parameters
+
+{{#each params}}
+- `{{name}}`: {{{linkify natspec true}}}
+{{/each}}
+{{/if}}
+
+{{#if natspec.returns}}
+#### Returns
+
+{{#each returns}}
+- `{{name}}`: {{{linkify natspec true}}}
+{{/each}}
+{{/if}}

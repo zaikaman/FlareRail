@@ -1,0 +1,38 @@
+name: API Key Request
+description: Request an API key
+title: "[req]: <product> on <network>"
+labels: ["access"]
+assignees:
+  - nikerzetic-aflabs
+  - fassko
+body:
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options: ["Flare DA Layer", "Other"]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      options: ["Flare Mainnet", "Songbird Canary-Network"]
+    validations:
+      required: true
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Purpose & scope
+      description: Use case, expected endpoints, estimated QPS
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact (Email or Discord/Telegram)
+    validations:
+      required: true

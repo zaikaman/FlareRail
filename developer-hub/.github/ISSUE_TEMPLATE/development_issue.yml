@@ -1,0 +1,51 @@
+name: Bug Report
+description: Report an issue encountered in this repo.
+title: "[bug]: <short summary>"
+labels: ["bug", "triage"]
+assignees:
+  - dineshpinto
+  - nikerzetic-aflabs
+  - fassko
+body:
+  - type: dropdown
+    id: os
+    attributes:
+      label: Environment
+      options: ["Linux", "macOS", "Windows", "Docker", "Other"]
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? Why is it a problem?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal, reliable steps
+      value: |
+        1.
+        2.
+        3.
+      render: markdown
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs Actual
+      value: |
+        **Expected:**
+        **Actual:**
+      render: markdown
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Stack traces
+      description: Remove secrets; scrub tokens before posting.
+      render: shell

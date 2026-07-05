@@ -1,0 +1,766 @@
+---
+title: IMasterAccountController
+description: Flare Smart Accounts IMasterAccountController interface reference.
+keywords: [smart-accounts, xrpl, flare-network, solidity]
+sidebar_position: 1
+---
+
+Interface for the `MasterAccountController` contract, which manages personal accounts and executes XRPL instructions on Flare.
+It uses the [Diamond pattern](https://eips.ethereum.org/EIPS/eip-2535) to compose all functionality into a single deployed contract.
+
+Sourced from `IMasterAccountController.sol` and its facets on [GitHub](https://github.com/flare-foundation/flare-smart-accounts/tree/main/contracts/userInterfaces).
+
+## Personal Accounts
+
+### `getPersonalAccount`
+
+Returns the [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) contract address for a given XRPL owner.
+A `PersonalAccount` is deployed only once the first instruction has been sent from its owner XRPL address.
+If the account has not yet been deployed, it returns the precomputed deterministic address.
+
+```solidity
+function getPersonalAccount(
+    string calldata _xrplOwner
+)
+    external view
+    returns (address);
+```
+
+Parameters:
+
+- `_xrplOwner`: The XRPL address of the owner.
+
+Returns:
+
+- The [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) contract address, or the computed address if not yet deployed.
+
+## Instructions
+
+### `executeInstruction`
+
+Executes an XRPL instruction for a given XRPL address using a [Flare Data Connector](/fdc/overview) payment proof.
+
+```solidity
+function executeInstruction(
+    IPayment.Proof calldata _proof,
+    string calldata _xrplAddress
+)
+    external payable;
+```
+
+Parameters:
+
+- `_proof`: Proof of the XRPL payment transaction that comes from the [Flare Data Connector](/fdc/overview).
+- `_xrplAddress`: The XRPL address that sent the payment.
+
+### `reserveCollateral`
+
+Reserves collateral for a minting operation.
+Called by the executor service after receiving a collateral reservation instruction from an XRPL payment.
+
+```solidity
+function reserveCollateral(
+    string calldata _xrplAddress,
+    bytes32 _paymentReference,
+    bytes32 _transactionId
+)
+    external payable
+    returns (uint256 _collateralReservationId);
+```
+
+Parameters:
+
+- `_xrplAddress`: The XRPL address requesting the collateral reservation.
+- `_paymentReference`: The payment reference from the XRPL transaction memo.
+- `_transactionId`: The unique XRPL transaction ID for tracking.
+
+Returns:
+
+- `_collateralReservationId`: The ID of the collateral reservation.
+
+### `executeDepositAfterMinting`
+
+Executes a vault deposit after minting is complete for a given collateral reservation.
+
+```solidity
+function executeDepositAfterMinting(
+    uint256 _collateralReservationId,
+    IPayment.Proof calldata _proof,
+    string calldata _xrplAddress
+)
+    external;
+```
+
+Parameters:
+
+- `_collateralReservationId`: The ID of the collateral reservation returned by `reserveCollateral`.
+- `_proof`: Proof of the XRPL payment transaction.
+- `_xrplAddress`: The XRPL address requesting execution.
+
+### `isTransactionIdUsed`
+
+Returns `true` if the given XRPL transaction ID has already been executed.
+
+```solidity
+function isTransactionIdUsed(
+    bytes32 _transactionId
+)
+    external view
+    returns (bool);
+```
+
+### `getTransactionIdForCollateralReservation`
+
+Returns the XRPL transaction ID associated with a collateral reservation.
+
+```solidity
+function getTransactionIdForCollateralReservation(
+    uint256 _collateralReservationId
+)
+    external view
+    returns (bytes32 _transactionId);
+```
+
+## Instruction Fees
+
+### `getDefaultInstructionFee`
+
+Returns the default fee applied to instructions without a specific per-instruction fee configured.
+Denominated in the underlying asset's smallest unit (i.e., XRP drops).
+
+```solidity
+function getDefaultInstructionFee()
+    external view
+    returns (uint256);
+```
+
+### `getInstructionFee`
+
+Returns the fee for a specific instruction ID (first byte on an encoded instruction).
+
+```solidity
+function getInstructionFee(
+    uint256 _instructionId
+)
+    external view
+    returns (uint256);
+```
+
+Parameters:
+
+- `_instructionId`: The ID of the instruction.
+
+## Agent Vaults
+
+### `getAgentVaults`
+
+Returns the list of registered FAssets agent vault IDs and their corresponding addresses.
+
+```solidity
+function getAgentVaults()
+    external view
+    returns (uint256[] memory _agentVaultIds, address[] memory _agentVaultAddresses);
+```
+
+Returns:
+
+- `_agentVaultIds`: The list of registered agent vault IDs.
+- `_agentVaultAddresses`: The list of registered agent vault addresses.
+
+## Vaults
+
+### `getVaults`
+
+Returns the list of registered vaults as arrays of their IDs, addresses, and types (Firelight or Upshift).
+
+```solidity
+function getVaults()
+    external view
+    returns (
+        uint256[] memory _vaultIds,
+        address[] memory _vaultAddresses,
+        uint8[] memory _vaultTypes
+    );
+```
+
+Returns:
+
+- `_vaultIds`: The list of registered vault IDs.
+- `_vaultAddresses`: The list of vault addresses.
+- `_vaultTypes`: The list of vault types (`1` = Firelight, `2` = Upshift).
+
+## Executor
+
+### `getExecutorInfo`
+
+Returns the executor address and fee.
+The executor is the service that calls [`reserveCollateral`](/smart-accounts/reference/IMasterAccountController#reservecollateral) and [`executeDepositAfterMinting`](/smart-accounts/reference/IMasterAccountController#executedepositafterminting) on behalf of users.
+
+```solidity
+function getExecutorInfo()
+    external view
+    returns (address payable _executor, uint256 _executorFee);
+```
+
+Returns:
+
+- `_executor`: The executor address.
+- `_executorFee`: The executor fee in wei.
+
+## XRPL Provider Wallets
+
+### `getXrplProviderWallets`
+
+Returns a list of XRPL operator wallet addresses to which users send payment transactions.
+
+```solidity
+function getXrplProviderWallets()
+    external view
+    returns (string[] memory);
+```
+
+## Payment Proofs
+
+### `getSourceId`
+
+Returns the source ID used to identify the XRPL chain for payment proof verification.
+
+```solidity
+function getSourceId()
+    external view
+    returns (bytes32);
+```
+
+### `getPaymentProofValidityDurationSeconds`
+
+Returns the maximum age (in seconds) of an XRPL payment proof for it to be accepted.
+
+```solidity
+function getPaymentProofValidityDurationSeconds()
+    external view
+    returns (uint256);
+```
+
+## Memo Instructions
+
+Memo instructions allow a [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) to execute [custom user operations](/smart-accounts/custom-instruction-comparison) embedded in the XRPL `Payment` memo when FAssets are direct-minted into the account.
+
+### `handleMintedFAssets`
+
+Called by the FAssets `AssetManager` when FXRP is direct-minted into a personal account.
+Decodes the XRPL memo, distributes the minted FAssets between the personal account and the executor, and dispatches the custom instruction.
+For the [`0xFE` custom instruction](/smart-accounts/custom-instruction), the `_data` parameter carries the ABI-encoded `PackedUserOperation` whose hash was committed to in the memo.
+See [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison) for the end-to-end flow.
+
+```solidity
+function handleMintedFAssets(
+    bytes32 _transactionId,
+    string calldata _sourceAddress,
+    uint256 _amount,
+    uint256 _underlyingTimestamp,
+    bytes calldata _memoData,
+    address payable _executor,
+    bytes calldata _data
+)
+    external payable;
+```
+
+Parameters:
+
+- `_transactionId`: The XRPL transaction ID for replay protection.
+- `_sourceAddress`: The XRPL source address that triggered the mint.
+- `_amount`: The total minted FAsset amount, in the FAsset's smallest unit (XRP drops for FXRP).
+- `_underlyingTimestamp`: The XRPL transaction timestamp.
+- `_memoData`: The raw XRPL memo bytes carrying the [memo instruction](/smart-accounts/custom-instruction-comparison).
+- `_executor`: The executor address; must equal the personal account's pinned executor when one is set.
+- `_data`: Extra data not contained in the XRPL memo.
+  For the `0xFE` custom instruction this is the ABI-encoded `PackedUserOperation`; for all other instruction IDs it is ignored.
+
+The `AssetManager` is the only address allowed to call this function — any other caller reverts with [`OnlyAssetManager`](#onlyassetmanager).
+
+### `getNonce`
+
+Returns the current memo-instruction nonce for a personal account.
+A `PackedUserOperation`'s `nonce` field must equal this value to be accepted; the nonce auto-increments on every successful execution.
+
+:::warning[Nonce collisions]
+
+Only one user operation can consume a given nonce.
+If several XRPL flows or off-chain builders read the same `getNonce` value and each embeds a **different** `PackedUserOperation` with that nonce, whichever mint executes first succeeds and increments the nonce; the others revert with [`InvalidNonce`](#invalidnonce).
+
+A common real-world trigger is two XRPL payments submitted in short succession — for example, duplicate withdrawal attempts built before the first mint finalizes.
+The second payment's XRP remains at the Core Vault until recovered.
+See [Avoiding duplicate-nonce failures](/smart-accounts/custom-instruction#avoiding-duplicate-nonce-failures).
+
+:::
+
+```solidity
+function getNonce(
+    address _personalAccount
+)
+    external view
+    returns (uint256);
+```
+
+Parameters:
+
+- `_personalAccount`: The personal account address to query.
+
+### `getExecutor`
+
+Returns the executor pinned to a personal account, or `address(0)` if no executor is pinned.
+When set, only that executor can deliver memos to the account (except for the executor-management memos `0xD0` and `0xD1`).
+
+```solidity
+function getExecutor(
+    address _personalAccount
+)
+    external view
+    returns (address);
+```
+
+Parameters:
+
+- `_personalAccount`: The personal account address to query.
+
+## Events
+
+### Instructions
+
+#### `CollateralReserved`
+
+Emitted when collateral is reserved for minting.
+
+```solidity
+event CollateralReserved(
+    address indexed personalAccount,
+    bytes32 indexed transactionId,
+    bytes32 indexed paymentReference,
+    string xrplOwner,
+    uint256 collateralReservationId,
+    address agentVault,
+    uint256 lots,
+    address executor,
+    uint256 executorFee
+);
+```
+
+#### `InstructionExecuted`
+
+Emitted when an instruction is executed.
+
+```solidity
+event InstructionExecuted(
+    address indexed personalAccount,
+    bytes32 indexed transactionId,
+    bytes32 indexed paymentReference,
+    string xrplOwner,
+    uint256 instructionId
+);
+```
+
+#### `FXrpRedeemed`
+
+Emitted when an FXRP redemption is performed.
+
+```solidity
+event FXrpRedeemed(
+    address indexed personalAccount,
+    uint256 lots,
+    uint256 amount,
+    address executor,
+    uint256 executorFee
+);
+```
+
+#### `FXrpTransferred`
+
+Emitted when FXRP is transferred from a personal account.
+
+```solidity
+event FXrpTransferred(
+    address indexed personalAccount,
+    address to,
+    uint256 amount
+);
+```
+
+#### `Approved`
+
+Emitted when a token approval is made for a vault.
+
+```solidity
+event Approved(
+    address indexed personalAccount,
+    address fxrp,
+    address vault,
+    uint256 amount
+);
+```
+
+#### `Deposited`
+
+Emitted when a deposit is made to a vault.
+
+```solidity
+event Deposited(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 amount,
+    uint256 shares
+);
+```
+
+#### `Redeemed`
+
+Emitted when a redemption is made from a vault.
+
+```solidity
+event Redeemed(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 shares,
+    uint256 amount
+);
+```
+
+#### `WithdrawalClaimed`
+
+Emitted when a withdrawal claim is completed.
+
+```solidity
+event WithdrawalClaimed(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 period,
+    uint256 amount
+);
+```
+
+#### `RedeemRequested`
+
+Emitted when a redeem request is made from a vault.
+
+```solidity
+event RedeemRequested(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 shares,
+    uint256 claimableEpoch,
+    uint256 year,
+    uint256 month,
+    uint256 day
+);
+```
+
+#### `Claimed`
+
+Emitted when a claim is made for a specific date.
+
+```solidity
+event Claimed(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 year,
+    uint256 month,
+    uint256 day,
+    uint256 shares,
+    uint256 amount
+);
+```
+
+### Memo Instructions
+
+#### `UserOperationExecuted`
+
+Emitted when a memo-dispatched user operation (`0xFF` memo field custom instruction or `0xFE` custom instruction) executes against the personal account.
+
+```solidity
+event UserOperationExecuted(
+    address indexed personalAccount,
+    uint256 nonce
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account that ran the user operation.
+- `nonce`: The nonce consumed by the user operation.
+
+#### `IgnoreMemoSet`
+
+Emitted when an `0xE0` memo marks a target XRPL transaction's memo to be skipped on its next direct mint.
+
+Use this opcode to recover when [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata) reverts and the underlying XRP payment is still unminted at the Core Vault.
+After `IgnoreMemoSet` is recorded, the executor re-submits the direct mint with the original FDC proof; FXRP is credited to the personal account without dispatching the original custom instruction.
+See [Recovery after a failed mint](/smart-accounts/custom-instruction#recovery-after-a-failed-mint) and the [Recover Stuck Mint Transaction TypeScript guide](/smart-accounts/guides/typescript-viem/recover-stuck-mint-transaction-ts).
+
+```solidity
+event IgnoreMemoSet(
+    address indexed personalAccount,
+    bytes32 indexed targetTxId
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account that owns the ignore flag.
+- `targetTxId`: The XRPL transaction ID whose memo will be skipped.
+
+#### `NonceIncreased`
+
+Emitted when an `0xE1` memo fast-forwards the personal account's memo-instruction nonce.
+
+```solidity
+event NonceIncreased(
+    address indexed personalAccount,
+    uint256 newNonce
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account whose nonce was advanced.
+- `newNonce`: The new nonce value.
+
+#### `ExecutorSet`
+
+Emitted when an `0xD0` memo pins an executor to the personal account.
+
+```solidity
+event ExecutorSet(
+    address indexed personalAccount,
+    address indexed executor
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account.
+- `executor`: The pinned executor address.
+
+#### `ExecutorRemoved`
+
+Emitted when an `0xD1` memo unpins the executor from the personal account.
+
+```solidity
+event ExecutorRemoved(
+    address indexed personalAccount
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account whose executor was cleared.
+
+#### `ReplacementFeeSet`
+
+Emitted when an `0xE2` memo sets a replacement executor fee for a stuck XRPL transaction.
+
+```solidity
+event ReplacementFeeSet(
+    address indexed personalAccount,
+    bytes32 indexed targetTxId,
+    uint64 newFee
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account.
+- `targetTxId`: The XRPL transaction ID whose fee is being replaced.
+- `newFee`: The new executor fee, in the FAsset's smallest unit.
+
+#### `DirectMintingExecuted`
+
+Emitted when direct minting credits FAssets to a personal account.
+
+```solidity
+event DirectMintingExecuted(
+    address indexed personalAccount,
+    bytes32 indexed transactionId,
+    string sourceAddress,
+    uint256 amount,
+    uint256 executorFee,
+    address executor
+);
+```
+
+Parameters:
+
+- `personalAccount`: The recipient personal account.
+- `transactionId`: The XRPL transaction ID.
+- `sourceAddress`: The XRPL source address that triggered the mint.
+- `amount`: The total minted amount (before deducting the executor fee).
+- `executorFee`: The fee paid to the executor.
+- `executor`: The executor address that delivered the mint.
+
+## Errors
+
+### Memo Instructions
+
+These errors are surfaced by [`handleMintedFAssets`](#handlemintedfassets) and the memo dispatch path.
+
+#### `TransactionAlreadyExecuted`
+
+Thrown when an XRPL transaction ID has already been processed.
+
+```solidity
+error TransactionAlreadyExecuted();
+```
+
+#### `OnlyAssetManager`
+
+Thrown when [`handleMintedFAssets`](#handlemintedfassets) is called by any address other than the FAssets `AssetManager`.
+
+```solidity
+error OnlyAssetManager();
+```
+
+#### `InsufficientAmountForFee`
+
+Thrown when the minted amount is smaller than the executor fee.
+
+```solidity
+error InsufficientAmountForFee(
+    uint256 amount,
+    uint256 fee
+);
+```
+
+Parameters:
+
+- `amount`: The minted amount.
+- `fee`: The executor fee.
+
+#### `WrongExecutor`
+
+Thrown when the delivered executor does not match the executor pinned to the personal account.
+
+```solidity
+error WrongExecutor(
+    address expected,
+    address actual
+);
+```
+
+Parameters:
+
+- `expected`: The executor pinned via [`getExecutor`](#getexecutor).
+- `actual`: The executor that delivered the mint.
+
+#### `InvalidMemoData`
+
+Thrown when the memo payload does not match the expected length for the given memo instruction ID.
+
+```solidity
+error InvalidMemoData();
+```
+
+#### `InvalidInstructionId`
+
+Thrown when the first byte of the memo is not a recognized memo instruction ID (`0xFF`, `0xFE`, `0xE0`, `0xE1`, `0xE2`, `0xD0`, `0xD1`).
+
+```solidity
+error InvalidInstructionId(
+    uint8 instructionId
+);
+```
+
+Parameters:
+
+- `instructionId`: The unrecognized memo instruction ID.
+
+#### `CustomInstructionHashMismatch`
+
+Thrown by the [`0xFE` custom instruction](/smart-accounts/custom-instruction) when `keccak256(_data)` does not match the 32-byte hash carried in the XRPL memo.
+
+```solidity
+error CustomInstructionHashMismatch(
+    bytes32 expected,
+    bytes32 actual
+);
+```
+
+Parameters:
+
+- `expected`: The hash committed to in the memo.
+- `actual`: The hash of the supplied `_data`.
+
+#### `InvalidSender`
+
+Thrown when the `sender` field of the embedded `PackedUserOperation` does not match the personal account derived from the XRPL source address.
+
+```solidity
+error InvalidSender(
+    address sender,
+    address personalAccount
+);
+```
+
+Parameters:
+
+- `sender`: The sender field of the user operation.
+- `personalAccount`: The expected personal account address.
+
+#### `InvalidNonce`
+
+Thrown when the `nonce` field of the embedded `PackedUserOperation` does not equal the personal account's current nonce.
+
+```solidity
+error InvalidNonce(
+    uint256 expected,
+    uint256 actual
+);
+```
+
+Parameters:
+
+- `expected`: The nonce currently stored for the personal account.
+- `actual`: The nonce supplied in the user operation.
+
+#### `InvalidNonceIncrease`
+
+Thrown by an `0xE1` memo when the requested nonce is not strictly greater than the current nonce, or jumps by more than `type(uint32).max`.
+
+```solidity
+error InvalidNonceIncrease(
+    uint256 currentNonce,
+    uint256 newNonce
+);
+```
+
+Parameters:
+
+- `currentNonce`: The current nonce value.
+- `newNonce`: The requested new nonce value.
+
+#### `CallFailed`
+
+Thrown when the `callData` carried by the user operation reverts when invoked on the personal account.
+
+```solidity
+error CallFailed(
+    bytes returnData
+);
+```
+
+Parameters:
+
+- `returnData`: The raw return data from the failed call.
+
+#### `AddressZero`
+
+Thrown when an address parsed from a memo payload (for example, the executor in an `0xD0` memo) is the zero address.
+
+```solidity
+error AddressZero();
+```
+
+#### `ValueZero`
+
+Thrown when a value parsed from a payment reference is zero.
+
+```solidity
+error ValueZero();
+```

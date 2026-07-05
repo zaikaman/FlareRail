@@ -12,15 +12,15 @@
 
 **Purpose**: Create the TypeScript monorepo structure and baseline tooling for API, dashboard, worker, SDK, shared domain, contracts, and configuration.
 
-- [ ] T001 Create monorepo workspace files in `package.json`, `tsconfig.base.json`, `npm-workspaces.json`, and `.gitignore`
-- [ ] T002 Create source directories from the implementation plan in `apps/api`, `apps/dashboard`, `apps/worker`, `packages/core`, `packages/sdk`, `packages/contracts`, `packages/config`, `prisma`, and `docs/flarerail`
-- [ ] T003 Configure shared TypeScript build settings in `tsconfig.base.json` and package-specific `tsconfig.json` files
-- [ ] T004 [P] Configure linting and formatting in `eslint.config.js`, `.prettierrc.json`, and package scripts in `package.json`
-- [ ] T005 [P] Configure test runner setup in `vitest.config.ts` and package-level test setup files
-- [ ] T006 [P] Add environment variable templates in `.env.example`, `apps/api/.env.example`, `apps/worker/.env.example`, and `apps/dashboard/.env.example`
-- [ ] T007 [P] Add Vercel dashboard deployment config in `apps/dashboard/vercel.json`
-- [ ] T008 [P] Add Heroku process config for API and worker in `Procfile`
-- [ ] T009 Add root scripts for build, lint, test, dev, migration, and validation workflows in `package.json`
+- [x] T001 Create monorepo workspace files in `package.json`, `tsconfig.base.json`, `npm-workspaces.json`, and `.gitignore`
+- [x] T002 Create source directories from the implementation plan in `apps/api`, `apps/dashboard`, `apps/worker`, `packages/core`, `packages/sdk`, `packages/contracts`, `packages/config`, `prisma`, and `docs/flarerail`
+- [x] T003 Configure shared TypeScript build settings in `tsconfig.base.json` and package-specific `tsconfig.json` files
+- [x] T004 [P] Configure linting and formatting in `eslint.config.js`, `.prettierrc.json`, and package scripts in `package.json`
+- [x] T005 [P] Configure test runner setup in `vitest.config.ts` and package-level test setup files
+- [x] T006 [P] Add environment variable templates in `.env.example`, `apps/api/.env.example`, `apps/worker/.env.example`, and `apps/dashboard/.env.example`
+- [x] T007 [P] Add Vercel dashboard deployment config in `apps/dashboard/vercel.json`
+- [x] T008 [P] Add Heroku process config for API and worker in `Procfile`
+- [x] T009 Add root scripts for build, lint, test, dev, migration, and validation workflows in `package.json`
 
 ---
 
@@ -30,37 +30,37 @@
 
 **Critical**: No user story work can begin until this phase is complete.
 
-- [ ] T010 Create core enum and status definitions in `packages/core/src/domain/statuses.ts`
-- [ ] T011 Create shared reason-code catalog in `packages/core/src/reason-codes/index.ts`
-- [ ] T012 Create shared validation schemas for addresses, amounts, environments, identifiers, and pagination in `packages/core/src/validation/common.ts`
-- [ ] T013 Create deposit intent state machine in `packages/core/src/state-machines/deposit-intent.ts`
-- [ ] T014 Create position state machine in `packages/core/src/state-machines/position.ts`
-- [ ] T015 Create exit intent state machine in `packages/core/src/state-machines/exit-intent.ts`
-- [ ] T016 [P] Add unit tests for shared validation schemas in `packages/core/tests/validation/common.test.ts`
-- [ ] T017 [P] Add unit tests for deposit intent state transitions in `packages/core/tests/state-machines/deposit-intent.test.ts`
-- [ ] T018 [P] Add unit tests for position state transitions in `packages/core/tests/state-machines/position.test.ts`
-- [ ] T019 [P] Add unit tests for exit intent state transitions in `packages/core/tests/state-machines/exit-intent.test.ts`
-- [ ] T020 Define Prisma schema for WalletOrganization, WorkspaceCredential, WalletUser, Strategy, RiskPolicy, Quote, DepositIntent, Position, ExitIntent, LifecycleEvent, WebhookEndpoint, WebhookDelivery, and Incident in `prisma/schema.prisma`
-- [ ] T021 Create initial database migration for FlareRail entities in `prisma/migrations/001_initial_flarerail_schema/migration.sql`
-- [ ] T022 Create Prisma client wrapper in `packages/core/src/persistence/db.ts`
-- [ ] T023 Create seed data for a test wallet organization, strategy, and policy in `prisma/seed.ts`
-- [ ] T024 [P] Add persistence integration tests for organization scoping and environment separation in `packages/core/tests/persistence/scoping.test.ts`
-- [ ] T025 Create shared configuration loader in `packages/config/src/index.ts`
-- [ ] T026 Create API server bootstrap in `apps/api/src/server.ts`
-- [ ] T027 Create API route registration shell in `apps/api/src/routes/index.ts`
-- [ ] T028 Create API authentication middleware for partner bearer credentials in `apps/api/src/auth/partner-auth.ts`
-- [ ] T029 Create idempotency middleware for command endpoints in `apps/api/src/middleware/idempotency.ts`
-- [ ] T030 Create centralized API error and reason-code mapping in `apps/api/src/middleware/errors.ts`
-- [ ] T031 Create lifecycle event service in `apps/api/src/services/lifecycle-event-service.ts`
-- [ ] T032 Create queue connection and queue names in `apps/worker/src/jobs/queues.ts`
-- [ ] T033 Create worker bootstrap in `apps/worker/src/worker.ts`
-- [ ] T034 Create Flare provider adapter interface in `packages/contracts/src/flare-provider.ts`
-- [ ] T035 Create XRPL provider adapter interface in `packages/contracts/src/xrpl-provider.ts`
-- [ ] T036 Create placeholder Flare contract address registry in `packages/contracts/addresses/coston2.json`
-- [ ] T037 Create placeholder ABI export barrel in `packages/contracts/abi/index.ts`
-- [ ] T038 [P] Add API auth contract tests in `apps/api/tests/contract/auth.test.ts`
-- [ ] T039 [P] Add API error mapping unit tests in `apps/api/tests/unit/errors.test.ts`
-- [ ] T040 [P] Add worker queue smoke test in `apps/worker/tests/queues.test.ts`
+- [x] T010 Create core enum and status definitions in `packages/core/src/domain/statuses.ts`
+- [x] T011 Create shared reason-code catalog in `packages/core/src/reason-codes/index.ts`
+- [x] T012 Create shared validation schemas for addresses, amounts, environments, identifiers, and pagination in `packages/core/src/validation/common.ts`
+- [x] T013 Create deposit intent state machine in `packages/core/src/state-machines/deposit-intent.ts`
+- [x] T014 Create position state machine in `packages/core/src/state-machines/position.ts`
+- [x] T015 Create exit intent state machine in `packages/core/src/state-machines/exit-intent.ts`
+- [x] T016 [P] Add unit tests for shared validation schemas in `packages/core/tests/validation/common.test.ts`
+- [x] T017 [P] Add unit tests for deposit intent state transitions in `packages/core/tests/state-machines/deposit-intent.test.ts`
+- [x] T018 [P] Add unit tests for position state transitions in `packages/core/tests/state-machines/position.test.ts`
+- [x] T019 [P] Add unit tests for exit intent state transitions in `packages/core/tests/state-machines/exit-intent.test.ts`
+- [x] T020 Define Prisma schema for WalletOrganization, WorkspaceCredential, WalletUser, Strategy, RiskPolicy, Quote, DepositIntent, Position, ExitIntent, LifecycleEvent, WebhookEndpoint, WebhookDelivery, and Incident in `prisma/schema.prisma`
+- [x] T021 Create initial database migration for FlareRail entities in `prisma/migrations/001_initial_flarerail_schema/migration.sql`
+- [x] T022 Create Prisma client wrapper in `packages/core/src/persistence/db.ts`
+- [x] T023 Create seed data for a test wallet organization, strategy, and policy in `prisma/seed.ts`
+- [x] T024 [P] Add persistence integration tests for organization scoping and environment separation in `packages/core/tests/persistence/scoping.test.ts`
+- [x] T025 Create shared configuration loader in `packages/config/src/index.ts`
+- [x] T026 Create API server bootstrap in `apps/api/src/server.ts`
+- [x] T027 Create API route registration shell in `apps/api/src/routes/index.ts`
+- [x] T028 Create API authentication middleware for partner bearer credentials in `apps/api/src/auth/partner-auth.ts`
+- [x] T029 Create idempotency middleware for command endpoints in `apps/api/src/middleware/idempotency.ts`
+- [x] T030 Create centralized API error and reason-code mapping in `apps/api/src/middleware/errors.ts`
+- [x] T031 Create lifecycle event service in `apps/api/src/services/lifecycle-event-service.ts`
+- [x] T032 Create queue connection and queue names in `apps/worker/src/jobs/queues.ts`
+- [x] T033 Create worker bootstrap in `apps/worker/src/worker.ts`
+- [x] T034 Create Flare provider adapter interface in `packages/contracts/src/flare-provider.ts`
+- [x] T035 Create XRPL provider adapter interface in `packages/contracts/src/xrpl-provider.ts`
+- [x] T036 Create placeholder Flare contract address registry in `packages/contracts/addresses/coston2.json`
+- [x] T037 Create placeholder ABI export barrel in `packages/contracts/abi/index.ts`
+- [x] T038 [P] Add API auth contract tests in `apps/api/tests/contract/auth.test.ts`
+- [x] T039 [P] Add API error mapping unit tests in `apps/api/tests/unit/errors.test.ts`
+- [x] T040 [P] Add worker queue smoke test in `apps/worker/tests/queues.test.ts`
 
 **Checkpoint**: Foundation ready. User story implementation can now begin in priority order or in parallel by separate developers.
 

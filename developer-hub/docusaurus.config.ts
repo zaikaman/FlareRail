@@ -1,0 +1,425 @@
+import { themes as prismThemes } from "prism-react-renderer";
+import type { Config } from "@docusaurus/types";
+import type * as Preset from "@docusaurus/preset-classic";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+
+const config: Config = {
+  title: "Flare Developer Hub",
+  tagline: "Official documentation for Flare.",
+  favicon: "/img/favicon.ico",
+
+  url: "https://dev.flare.network",
+  baseUrl: "/",
+
+  organizationName: "flare-foundation",
+  projectName: "developer-hub",
+
+  onBrokenAnchors: "throw",
+  onDuplicateRoutes: "throw",
+  onBrokenLinks: "throw",
+
+  markdown: {
+    mermaid: true,
+    hooks: {
+      onBrokenMarkdownImages: "throw",
+      onBrokenMarkdownLinks: "throw",
+    },
+  },
+
+  trailingSlash: false,
+
+  i18n: {
+    defaultLocale: "en",
+    locales: ["en"],
+    localeConfigs: {
+      en: { htmlLang: "en" },
+    },
+  },
+
+  // Experimental features in preparation for Docusaurus v4 upgrade
+  // rspack is disabled currently due to bundling performance issues
+  future: {
+    v4: true,
+    experimental_faster: {
+      swcJsLoader: true,
+      swcJsMinimizer: true,
+      swcHtmlMinimizer: true,
+      lightningCssMinimizer: true,
+      rspackBundler: false,
+      rspackPersistentCache: false,
+      ssgWorkerThreads: true,
+      mdxCrossCompilerCache: true,
+    },
+  },
+
+  presets: [
+    [
+      "classic",
+      {
+        docs: {
+          sidebarPath: "./sidebars.ts",
+          routeBasePath: "/",
+          remarkPlugins: [remarkMath],
+          rehypePlugins: [rehypeKatex],
+          editUrl:
+            "https://github.com/flare-foundation/developer-hub/edit/main",
+          onInlineTags: "throw",
+        },
+        blog: false,
+        theme: {
+          customCss: "./src/css/custom.css",
+        },
+        gtag: {
+          trackingID: "G-E6JBVK9HQX",
+          anonymizeIP: true,
+        },
+        googleTagManager: {
+          containerId: "GTM-WX2D2TR",
+        },
+        sitemap: {
+          lastmod: "date",
+          ignorePatterns: ["/tags/**", "/**/*.pdf"],
+        },
+      } satisfies Preset.Options,
+    ],
+  ],
+
+  themeConfig: {
+    image: "img/flare-developer-hub.png",
+    colorMode: {
+      defaultMode: "light",
+      respectPrefersColorScheme: true,
+    },
+    headTags: [
+      {
+        tagName: "meta",
+        attributes: {
+          name: "google-site-verification",
+          content: "S7ko-mhGTnZdYIIAcKUa-IsjtF8x-0wvleX2uDUg0NU",
+        },
+      },
+      {
+        tagName: "link",
+        attributes: {
+          rel: "preload",
+          href: "/fonts/Satoshi/Satoshi-Variable.woff2",
+          as: "font",
+          type: "font/woff2",
+          crossorigin: "anonymous",
+        },
+      },
+    ],
+    docs: {
+      sidebar: {
+        autoCollapseCategories: false,
+      },
+    },
+    navbar: {
+      title: "Developer Hub",
+      hideOnScroll: false,
+      logo: {
+        alt: "Flare Icon",
+        src: "img/ui/flare-icon.light.svg",
+        srcDark: "img/ui/flare-icon.dark.svg",
+        width: 32,
+        height: 32,
+      },
+      items: [
+        {
+          href: "https://github.com/flare-foundation/developer-hub",
+          className: "header-github-link",
+          "aria-label": "GitHub repository",
+          position: "right",
+        },
+      ],
+    },
+    footer: {
+      style: "light",
+      logo: {
+        alt: "Flare Logo",
+        src: "img/ui/footer-logo.light.svg",
+        srcDark: "img/ui/footer-logo.dark.svg",
+        href: "https://flare.network/",
+        width: 405,
+        height: 35.25,
+        target: "_blank",
+      },
+      links: [
+        {
+          title: "Flare",
+          items: [
+            {
+              label: "Support",
+              href: "https://flare.network/resources/technical-support",
+            },
+            {
+              label: "Brand Kit",
+              href: "https://flare.network/media",
+            },
+            {
+              label: "Terms & Conditions",
+              href: "https://flare.network/privacy-policy/",
+            },
+            {
+              label: "UK Disclaimer",
+              href: "https://flare.network/uk-disclaimer",
+            },
+          ],
+        },
+        {
+          title: "Resources",
+          items: [
+            {
+              label: "Whitepapers",
+              to: "/support/whitepapers",
+            },
+
+            {
+              label: "Audits",
+              to: "/support/audits",
+            },
+            {
+              label: "FAQs",
+              to: "/support/faqs",
+            },
+            {
+              label: "FLR",
+              to: "/support/flr",
+            },
+          ],
+        },
+        {
+          title: "Explore",
+          items: [
+            {
+              label: "Flare Explorer",
+              href: "https://flare-explorer.flare.network",
+            },
+            {
+              label: "Systems Explorer",
+              href: "https://flare-systems-explorer.flare.network",
+            },
+            {
+              label: "Bug Bounty",
+              href: "https://immunefi.com/bug-bounty/flarenetwork/information/",
+            },
+            {
+              label: "Grants",
+              href: "https://flare.network/grants",
+            },
+          ],
+        },
+        {
+          title: "Governance",
+          items: [
+            {
+              label: "Flare Portal",
+              href: "https://portal.flare.network/",
+            },
+            {
+              label: "Governance Proposals",
+              href: "https://proposals.flare.network",
+            },
+          ],
+        },
+      ],
+      copyright: `© Flare ${new Date().getFullYear()}`,
+    },
+    prism: {
+      additionalLanguages: ["solidity", "bash", "json", "toml", "diff"],
+      theme: prismThemes.oneDark,
+      darkTheme: prismThemes.oneDark,
+    },
+    mermaid: {
+      theme: { light: "neutral", dark: "dark" },
+    },
+  } satisfies Preset.ThemeConfig,
+  themes: [
+    "@docusaurus/theme-mermaid",
+    [
+      require.resolve("@easyops-cn/docusaurus-search-local"),
+      {
+        language: ["en"],
+        indexDocs: true,
+        indexPages: true,
+        indexBlog: false,
+        hashed: true,
+        docsRouteBasePath: "/",
+      },
+    ],
+  ],
+  stylesheets: [
+    {
+      href: "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css",
+      type: "text/css",
+      integrity:
+        "sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP",
+      crossorigin: "anonymous",
+    },
+  ],
+  plugins: [
+    require.resolve("./webpack.config.js"),
+    [
+      "docusaurus-plugin-copy-page-button",
+      {
+        mcpServer: {
+          name: "Flare DevHub MCP Server",
+          url: "https://dev.flare.network/mcp",
+        },
+      },
+    ],
+    [
+      "docusaurus-plugin-llms",
+      {
+        title: "Flare Developer Hub",
+        description: "Official documentation for Flare.",
+        // scope
+        docsDir: "docs",
+        // URLs: we use routeBasePath "/" so docs are at root, not /docs
+        pathTransformation: {
+          ignorePaths: ["docs"],
+        },
+        // outputs
+        generateLLMsTxt: true,
+        generateLLMsFullTxt: true,
+        llmsTxtFilename: "llms.txt",
+        llmsFullTxtFilename: "llms-full.txt",
+        // curation
+        includeOrder: [
+          "1-intro.mdx",
+          "**/network/**/*.mdx",
+          "**/network/**/*.md",
+          "**/ftso/**/*.mdx",
+          "**/ftso/**/*.md",
+          "**/fdc/**/*.mdx",
+          "**/fdc/**/*.md",
+          "**/fassets/**/*.mdx",
+          "**/fassets/**/*.md",
+          "**/fxrp/**/*.mdx",
+          "**/fxrp/**/*.md",
+          "**/smart-accounts/**/*.mdx",
+          "**/smart-accounts/**/*.md",
+          "**/fcc/**/*.mdx",
+          "**/fcc/**/*.md",
+          "**/run-node/**/*.mdx",
+          "**/run-node/**/*.md",
+          "**/support/**/*.mdx",
+          "**/support/**/*.md",
+        ],
+        ignoreFiles: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/.docusaurus/**",
+          "**/build/**",
+          "**/*.txt",
+        ],
+        includeUnmatchedLast: false,
+        // cleaning
+        excludeImports: true,
+        removeDuplicateHeadings: true,
+        // consolidate bundles for better retrieval
+        // no file larger than 250k tokens
+        customLLMFiles: [
+          {
+            filename: "llms-network.txt",
+            includePatterns: ["**/network/**/*.mdx", "**/network/**/*.md"],
+            fullContent: true,
+            title: "Network Documentation",
+            description:
+              "Flare Network concepts, integration guides, SDKs, and API/Solidity references",
+          },
+          {
+            filename: "llms-ftso.txt",
+            includePatterns: ["**/ftso/**/*.mdx", "**/ftso/**/*.md"],
+            fullContent: true,
+            title: "FTSO Documentation",
+            description:
+              "Flare Time Series Oracle (FTSO) concepts, integration guides, and API/Solidity references",
+          },
+          {
+            filename: "llms-fdc.txt",
+            includePatterns: ["**/fdc/**/*.mdx", "**/fdc/**/*.md"],
+            fullContent: true,
+            title: "FDC Documentation",
+            description:
+              "Flare Data Connector (FDC) concepts, integration guides, and API/Solidity references",
+          },
+          {
+            filename: "llms-fassets.txt",
+            includePatterns: ["**/fassets/**/*.mdx", "**/fassets/**/*.md"],
+            fullContent: true,
+            title: "FAssets Documentation",
+            description:
+              "FAssets concepts, integration guides, and API/Solidity references",
+          },
+          {
+            filename: "llms-fxrp.txt",
+            includePatterns: ["**/fxrp/**/*.mdx", "**/fxrp/**/*.md"],
+            fullContent: true,
+            title: "FXRP Documentation",
+            description:
+              "FXRP utility on Flare, including Firelight/Upshift vaults, OFT auto-mint/redeem, and token interactions",
+          },
+          {
+            filename: "llms-smart-accounts.txt",
+            includePatterns: [
+              "**/smart-accounts/**/*.mdx",
+              "**/smart-accounts/**/*.md",
+            ],
+            fullContent: true,
+            title: "Flare Smart Accounts Documentation",
+            description:
+              "Account abstraction for XRPL users interacting with Flare, including the MasterAccountController, custom instructions, and CLI guides",
+          },
+          {
+            filename: "llms-fcc.txt",
+            includePatterns: ["**/fcc/**/*.mdx", "**/fcc/**/*.md"],
+            fullContent: true,
+            title: "Flare Confidential Compute Documentation",
+            description:
+              "Flare Confidential Compute (FCC) concepts and integration guides using Trusted Execution Environments",
+          },
+          {
+            filename: "llms-node-operators.txt",
+            includePatterns: ["**/run-node/**/*.mdx", "**/run-node/**/*.md"],
+            fullContent: true,
+            title: "Flare Node Documentation",
+            description: "Runbooks and guides for Flare node operators",
+          },
+          {
+            filename: "llms-reference.txt",
+            includePatterns: [
+              "**/solidity-reference/**/*.mdx",
+              "**/solidity-reference/**/*.md",
+              "**/reference/**/*.mdx",
+              "**/reference/**/*.md",
+            ],
+            fullContent: true,
+            title: "API and Solidity Reference (All Modules)",
+            description:
+              "Consolidated interfaces and API references across Network, FTSO, FDC and FAssets.",
+          },
+        ],
+      },
+    ],
+    [
+      "docusaurus-plugin-mcp-server",
+      {
+        server: {
+          name: "Flare DevHub MCP Server",
+          version: "1.0.0",
+        },
+      },
+    ],
+  ],
+  scripts: [
+    // Defer cookie script loading until after page load
+    {
+      src: "/js/cookie-loader.js",
+      defer: true,
+    },
+  ],
+};
+
+export default config;

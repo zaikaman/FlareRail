@@ -1,0 +1,14 @@
+{
+  "network": "coston2",
+  "chainId": 114,
+  "contracts": {
+    "flareContractRegistry": null,
+    "assetManagerFxrp": null,
+    "fAssetFxrp": null,
+    "masterAccountController": null,
+    "fdcHub": null,
+    "fdcVerification": null,
+    "relay": null
+  },
+  "notes": "Placeholder registry. Replace null values with verified Coston2 addresses before live integration."
+}

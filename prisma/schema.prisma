@@ -1,0 +1,408 @@
+// ──────────────────────────────────────────────
+// FlareRail Prisma Schema — Phase 2 Foundation
+// ──────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums matching core/domain/statuses.ts ────
+
+enum Environment {
+  test
+  production
+}
+
+enum OrganizationStatus {
+  active
+  suspended
+}
+
+enum CredentialStatus {
+  active
+  revoked
+}
+
+enum StrategyStatus {
+  active
+  paused
+  unavailable
+}
+
+enum CapacityStatus {
+  available
+  limited
+  full
+}
+
+enum QuoteStatus {
+  available
+  unavailable
+  expired
+}
+
+enum DepositIntentStatus {
+  created
+  awaiting_user_action
+  observed
+  activating
+  active_position_created
+  expired
+  failed
+  cancelled
+}
+
+enum PositionStatus {
+  active
+  exiting
+  impaired
+  recovery_available
+  closed
+}
+
+enum ExitIntentStatus {
+  created
+  pending_user_confirmation
+  submitted
+  processing
+  delayed
+  completed
+  recoverable_failure
+  compensated
+  escalated
+  rejected
+  expired
+  failed
+}
+
+enum WebhookEndpointStatus {
+  active
+  disabled
+}
+
+enum WebhookDeliveryStatus {
+  pending
+  delivered
+  failed
+  exhausted
+}
+
+enum IncidentSeverity {
+  info
+  warning
+  critical
+}
+
+enum IncidentStatus {
+  open
+  monitoring
+  resolved
+}
+
+enum ActorType {
+  system
+  wallet_operator
+  partner_api
+  worker
+}
+
+// ── Models ─────────────────────────────────────
+
+model WalletOrganization {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  environment    Environment
+  status         OrganizationStatus @default(active)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  credentials    WorkspaceCredential[]
+  walletUsers    WalletUser[]
+  strategies     Strategy[]
+  riskPolicies   RiskPolicy[]
+  quotes         Quote[]
+  depositIntents DepositIntent[]
+  positions      Position[]
+  exitIntents    ExitIntent[]
+  lifecycleEvents LifecycleEvent[]
+  webhookEndpoints WebhookEndpoint[]
+  incidents      Incident[]
+}
+
+model WorkspaceCredential {
+  id             String           @id @default(cuid())
+  organizationId String
+  keyId          String           @unique
+  secretHash     String
+  label          String
+  scopes         Json
+  environment    Environment
+  status         CredentialStatus @default(active)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   WalletOrganization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, environment])
+}
+
+model WalletUser {
+  id             String   @id @default(cuid())
+  organizationId String
+  xrplAddress    String
+  walletUserRef  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   WalletOrganization @relation(fields: [organizationId], references: [id])
+  quotes         Quote[]
+  depositIntents DepositIntent[]
+  positions      Position[]
+  exitIntents    ExitIntent[]
+
+  @@unique([organizationId, xrplAddress])
+  @@unique([organizationId, walletUserRef])
+  @@index([organizationId, xrplAddress])
+}
+
+model Strategy {
+  id             String         @id @default(cuid())
+  organizationId String
+  code           String
+  environment    Environment
+  name           String
+  description    String?
+  riskCategory   String
+  status         StrategyStatus @default(active)
+  capacityStatus CapacityStatus @default(available)
+  minAmount      Decimal?
+  maxAmount      Decimal?
+  feeModel       Json?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization   WalletOrganization @relation(fields: [organizationId], references: [id])
+  riskPolicies   RiskPolicy[]
+  quotes         Quote[]
+  depositIntents DepositIntent[]
+  positions      Position[]
+
+  @@unique([environment, code])
+  @@index([organizationId, environment])
+}
+
+model RiskPolicy {
+  id               String   @id @default(cuid())
+  organizationId   String
+  strategyId       String
+  emergencyPaused  Boolean  @default(false)
+  exposureLimit    Decimal?
+  maxAmountPerUser Decimal?
+  minAmountPerUser Decimal?
+  allowedEnvironments Json?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     WalletOrganization @relation(fields: [organizationId], references: [id])
+  strategy         Strategy           @relation(fields: [strategyId], references: [id])
+
+  @@index([organizationId, strategyId])
+}
+
+model Quote {
+  id               String       @id @default(cuid())
+  organizationId   String
+  walletUserId     String?
+  strategyId       String
+  environment      Environment
+  status           QuoteStatus  @default(available)
+  amount           Decimal
+  feeAmount        Decimal?
+  feeCurrency      String?
+  rate             Decimal?
+  expiresAt        DateTime
+  metadata         Json?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization     WalletOrganization @relation(fields: [organizationId], references: [id])
+  walletUser       WalletUser?        @relation(fields: [walletUserId], references: [id])
+  strategy         Strategy           @relation(fields: [strategyId], references: [id])
+  depositIntent    DepositIntent?
+
+  @@index([organizationId, environment])
+  @@index([organizationId, walletUserId])
+}
+
+model DepositIntent {
+  id               String               @id @default(cuid())
+  organizationId   String
+  walletUserId     String?
+  quoteId          String               @unique
+  strategyId       String
+  environment      Environment
+  status           DepositIntentStatus  @default(created)
+  idempotencyKey   String?
+  userInstructions Json?
+  txReference      Json?
+  metadata         Json?
+  expiresAt        DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  organization     WalletOrganization   @relation(fields: [organizationId], references: [id])
+  walletUser       WalletUser?          @relation(fields: [walletUserId], references: [id])
+  quote            Quote                @relation(fields: [quoteId], references: [id])
+  strategy         Strategy             @relation(fields: [strategyId], references: [id])
+  position         Position?
+
+  @@index([organizationId, environment])
+  @@index([organizationId, idempotencyKey])
+}
+
+model Position {
+  id                String         @id @default(cuid())
+  organizationId    String
+  walletUserId      String?
+  depositIntentId   String         @unique
+  strategyId        String
+  environment       Environment
+  status            PositionStatus @default(active)
+  amount            Decimal
+  feesCollected     Decimal?
+  xrplAddress       String?
+  metadata          Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  organization      WalletOrganization @relation(fields: [organizationId], references: [id])
+  walletUser        WalletUser?        @relation(fields: [walletUserId], references: [id])
+  depositIntent     DepositIntent      @relation(fields: [depositIntentId], references: [id])
+  strategy          Strategy           @relation(fields: [strategyId], references: [id])
+  exitIntents       ExitIntent[]
+
+  @@index([organizationId, environment])
+}
+
+model ExitIntent {
+  id                 String           @id @default(cuid())
+  organizationId     String
+  walletUserId       String?
+  positionId         String
+  environment        Environment
+  status             ExitIntentStatus @default(created)
+  amount             Decimal
+  destinationAddress String
+  idempotencyKey     String?
+  txReference        Json?
+  metadata           Json?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  organization       WalletOrganization @relation(fields: [organizationId], references: [id])
+  walletUser         WalletUser?        @relation(fields: [walletUserId], references: [id])
+  position           Position           @relation(fields: [positionId], references: [id])
+
+  @@index([organizationId, environment])
+  @@index([organizationId, idempotencyKey])
+}
+
+model LifecycleEvent {
+  id               String    @id @default(cuid())
+  organizationId   String
+  subjectType      String
+  subjectId        String
+  eventType        String
+  actorType        ActorType
+  reasonCode       String
+  message          String
+  traceId          String?
+  externalReference Json?
+  metadata         Json?
+  createdAt        DateTime  @default(now())
+
+  organization     WalletOrganization @relation(fields: [organizationId], references: [id])
+  deliveries       WebhookDelivery[]
+
+  @@index([organizationId, subjectType, subjectId])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, eventType])
+}
+
+model WebhookEndpoint {
+  id               String               @id @default(cuid())
+  organizationId   String
+  url              String
+  secret           String?
+  eventTypes       Json
+  status           WebhookEndpointStatus @default(active)
+  description      String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  organization     WalletOrganization   @relation(fields: [organizationId], references: [id])
+  deliveries       WebhookDelivery[]
+
+  @@index([organizationId])
+}
+
+model WebhookDelivery {
+  id               String               @id @default(cuid())
+  webhookEndpointId String
+  lifecycleEventId String
+  status           WebhookDeliveryStatus @default(pending)
+  attemptCount     Int                  @default(0)
+  lastAttemptAt    DateTime?
+  responseStatus   Int?
+  responseBody     String?
+  nextRetryAt      DateTime?
+  deliveredAt      DateTime?
+  createdAt        DateTime             @default(now())
+
+  webhookEndpoint  WebhookEndpoint      @relation(fields: [webhookEndpointId], references: [id])
+  lifecycleEvent   LifecycleEvent       @relation(fields: [lifecycleEventId], references: [id])
+
+  @@index([webhookEndpointId, status])
+  @@index([lifecycleEventId])
+}
+
+model Incident {
+  id               String          @id @default(cuid())
+  organizationId   String?
+  strategyId       String?
+  severity         IncidentSeverity
+  status           IncidentStatus  @default(open)
+  title            String
+  description      String?
+  affectedUsers    Int             @default(0)
+  metadata         Json?
+  resolvedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  organization     WalletOrganization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([status, severity])
+}
+
+model IdempotencyRecord {
+  id              String   @id @default(cuid())
+  idempotencyKey  String
+  organizationId  String
+  responseBody    Json?
+  responseStatus  Int?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@unique([idempotencyKey, organizationId])
+  @@index([expiresAt])
+}

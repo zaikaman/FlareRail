@@ -1,0 +1,205 @@
+---
+title: Core Vault
+description: Understanding the Core Vault system in FAssets
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network, core-vault]
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+## Overview
+
+<ThemedImage
+  alt="FAssets Core Vault Architecture"
+  sources={{
+    light: useBaseUrl(
+      "img/docs/fassets/flare_fassets_core_vault_architecture_light.svg",
+    ),
+    dark: useBaseUrl(
+      "img/docs/fassets/flare_fassets_core_vault_architecture_dark.svg",
+    ),
+  }}
+/>
+
+The **Core Vault (CV)** is a specialized FAsset system vault that operates on the underlying network.
+It addresses a critical challenge in cross-chain systems: **protecting user funds from malicious agents while maintaining system scalability.**
+
+### Why the Core Vault?
+
+- In **FAssets v1**, participating agents were required to individually hold sufficient redemption assets (e.g., XRP) in their wallets.
+- To prevent theft, agents needed to be heavily overcollateralized - they had to lock up more value than they could ever profit from stealing.
+- This worked, but it limited minting capacity and made the system capital-inefficient.
+
+The **Core Vault** changes this model:
+
+- Instead of personally holding redemption assets (e.g., XRP), participating agents can now utilize a shared, insured, non-custodial vault.
+- The vault is **multisig-controlled** and governed by Flare, so agents cannot unilaterally take the funds.
+- Because theft is structurally prevented, agents no longer need extreme levels of overcollateralization.
+
+The Core Vault prevents agents from running away with XRP while simultaneously lowering collateral requirements and improving system scalability.
+
+### Key Properties
+
+- **Secure by design**: Agents cannot withdraw underlying assets directly.
+- **Capital efficient**: Agents can mint more FAssets with less collateral.
+- **System-wide liquidity**: Assets in the CV form a shared pool available to all agents.
+- **Governance oversight**: Multisig with pause controls and time-bounded fund release.
+
+Introduced in **FAssets v1.1**, the Core Vault enables the system to expand its minting capacity while maintaining the same strong guarantees of safety for users.
+
+## Key Features
+
+### Transfer Capacity
+
+To ensure redemption liquidity, a parameter enforces that after transferring assets to the Core Vault, **an agent must still maintain a minimum portion of minting capacity outside the CV**.
+This prevents agents from moving everything into the vault and leaving the system unbalanced.
+
+### Security Design
+
+- Each supported asset (XRP, BTC, DOGE, etc.) has its **own dedicated Core Vault**.
+- Each CV is a **multisig account on the underlying chain**, operated under a formal governance agreement with Flare.
+- Funds in the CV **no longer belong to a single agent** - they are pooled, with withdrawals only allowed under system rules.
+- Governance can pause deposits or withdrawals if suspicious activity is detected.
+
+## Core Vault Implementation
+
+### Fund Movement on Underlying Networks
+
+The Core Vault operates differently depending on the underlying network:
+
+**For XRP Ledger (XRP CV):**
+
+- The CV is implemented as a **multisig account** on the XRP Ledger.
+- Only the authorized **multisig signers** can move XRP from the vault.
+- These signers are authorized by Flare governance and operate under formal agreements.
+- All outgoing transactions require multiple signatures from the authorized signers.
+
+### Agent Ownership vs. Core Vault Ownership
+
+There's an important distinction between agent ownership and CV ownership:
+
+#### Agent Ownership (Standard FAssets)
+
+- Agents hold underlying assets in their own wallets.
+- These assets belong to the specific agent and are part of their collateral.
+- Agents have direct control over these assets.
+
+#### Core Vault Ownership
+
+- Assets transferred to the CV become part of a shared pool.
+- These assets **do not belong to any specific agent** once in the CV.
+- The CV is a system-level reserve that any agent can request assets from.
+- This allows for better capital efficiency and system-wide liquidity.
+
+### Agent Collateral Requirements
+
+Agents are required to provide collateral in the form of:
+
+- **Flare's native token (FLR or SGB)**
+- **USDC/USDT (stablecoins)**
+
+When agents transfer underlying assets to the CV, they can reduce their collateral requirements while maintaining their minting capacity.
+The CV effectively acts as an **insurance-backed reserve** that boosts efficiency without weakening security.
+
+## Operational Workflow
+
+### Transferring to Core Vault
+
+1. **Agent Transfers Assets**
+
+   The agent announces a transfer and sends the underlying asset (e.g., XRP) to the Core Vault (CV) address with a valid payment reference.
+
+2. **Proof of Payment Submitted**
+
+   Anyone (including the agent) submits the proof of the transfer to the FAsset system.
+
+3. **Verification and Redemption**
+
+   After verifying the payment, the system releases the agent's collateral.
+
+:::info
+
+Transfer requests do not expire.
+Agents must either complete the transfer or cancel and re-queue it.
+Inaction leaves collateral locked indefinitely.
+
+:::
+
+### Redemption from Core Vault
+
+There are two methods to retrieve assets from the CV:
+
+#### Request for Return (Agents Only)
+
+An agent can request assets from the CV through a special minting process, which creates a collateral reservation.
+Once the request is made, CV operators execute the transfer and submit proof of payment to the asset manager.
+There is no time limit for the CV to honor the request, but governance ensures timely execution.
+
+#### Direct Redemption (Users)
+
+Approved users can burn FXRP and receive underlying XRP from the CV.
+This requires KYC approval and a minimum redemption threshold.
+It is typically processed once per day and has a lower priority than agent return requests.
+It is helpful for large, less time-sensitive redemptions.
+
+## XRP Core Vault Design
+
+The XRP Core Vault is a multisig account on the XRP Ledger, backed by an audited Flare smart contract that emits transaction instructions for execution.
+
+### Transactions in XRP Core Vault
+
+The XRP Core Vault (CV) uses two types of transactions:
+
+- `Payment` [Transactions](https://xrpl.org/docs/references/protocol/transactions/types/payment): Transfers XRP back to agents upon redemption.
+- `EscrowCreate` [Transactions](https://xrpl.org/docs/references/protocol/transactions/types/escrowcreate): Time-locks XRP to control fund releases and minimize spending risk.
+
+:::info
+
+The vault is operated manually.
+Multisig signers validate all outgoing transactions against a pre-approved rule set and sign them only during designated daily windows.
+
+:::
+
+### Daily Security Routine
+
+1. **Escrow Expiry Adds Funds**
+
+   An expired escrow (size L) adds XRP to the vault's available pool.
+
+2. **Withdrawals & Payouts**
+
+   Users request withdrawals; multisig operators validate Flare's off-chain instructions and process payouts.
+
+3. **Re-escrow Excess & Maintain Reserve**
+
+   Remaining funds are escrowed in batches (size L), while a minimum reserve (M) is kept in the vault.
+
+Three escrows are created if `remaining_funds = M + 3L`, and M stays in the wallet.
+
+### Security Model
+
+The XRP Core Vault features enhanced security measures for managing daily liquidity, including escrow time-locking and a minimum reserve in multisig setups.
+It has an emergency pause function and "Red Alert Mode" for urgent threats.
+
+In case of a security issue, all signing is halted pending governance review.
+Escrow accounts may be unlocked to prevent asset loss, with governance overseeing the restoration of operations.
+Only one escrow can be unlocked per day, minimizing potential damage.
+
+## Summary
+
+The **Core Vault** fundamentally strengthens FAssets:
+
+- **Prevents loss of underlying assets** by removing agent control over pooled funds.
+- **Lowers collateral burdens**, improving capital efficiency.
+- **Expands minting capacity**, making the system more scalable.
+- **Adds layered security**, combining multisig, escrow, and governance controls.
+
+It is the key to making cross-chain assets on Flare both **secure** and **efficient**.
+
+:::tip[What's next]
+
+Learn more about the different components and processes involved in FAssets - [collateral](/fassets/collateral), [minting](/fassets/minting), [redemptions](/fassets/redemption) and [liquidations](/fassets/liquidation).
+
+For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-direct-minting), and [redemption](/fassets/developer-guides/fassets-redeem) guides to get started with FAssets integration.
+
+:::

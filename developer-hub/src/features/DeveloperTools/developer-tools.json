@@ -1,0 +1,400 @@
+{
+  "toolDescriptions": {
+    "QuickNode": "High-performance APIs for queries, transactions, and cross-chain operations.",
+    "NOWNodes": "Flare Full Node RPC service built for developers, enterprises, and Web3 applications.",
+    "Envio": "A modern, multi-chain EVM blockchain indexer for querying real-time and historical data.",
+    "Ankr": "Infrastructure and developer tools for blockchain application deployment.",
+    "Thirdweb": "SDK for building, launching, and managing Web3 applications with minimal configuration.",
+    "ChainList": "All public RPCs supporting Flare.",
+    "LayerZero V2": "Omnichain interoperability protocol enabling messaging and asset transfers between chains.",
+    "Stargate V2": "Cross-chain liquidity protocol facilitating asset transfers with unified liquidity pools.",
+    "USDC.e, WETH, USDT": "Stargate Hydra's wrapped OFTs.",
+    "USD₮0": "Tether's stablecoin omnichain fungible token (OFT).",
+    "flrETH": "Dinero's liquid staked ETH OFT.",
+    "zkBridge": "Zero-knowledge proof-based cross-chain bridge.",
+    "Goldsky": "Blockchain data platform offering indexed APIs and high-performance subgraph hosting.",
+    "SubQuery": "Open indexing protocol for organizing and querying blockchain data efficiently.",
+    "sqd": "Blockchain indexing solution optimized for speed, reliability, and data transformations.",
+    "MetaMask Embedded Wallets": "OAuth social logins with non-custodial key management for Web3 applications.",
+    "Etherspot Prime SDK": "ERC-4337 account abstraction features like sponsored txs, ERC-20 gas payments, and more.",
+    "Etherspot Modular SDK": "ERC-7579 smart account modules.",
+    "Wagmi": "React hooks library streamlining wallet connections and contract interactions.",
+    "RainbowKit": "Customizable React components for wallet connections.",
+    "Tenderly": "Development platform offering debugging, monitoring, and simulation services.",
+    "Turnkey": "Single API for creating embedded wallets, smart signers, and automating onchain actions.",
+    "Flare Space": "Analytics for Flare's C-chain and P-chain.",
+    "Dune": "Blockchain analytics platform for querying and visualizing onchain data.",
+    "Sentora": "Actionable intelligence for crypto assets and smart financial software solutions.",
+    "Flare Metrics": "Tracker for the best DeFi opportunities on Flare.",
+    "Flare Explorer": "Blockscout tool for inspecting and analyzing Flare Mainnet.",
+    "Coston2 Explorer": "Blockscout tool for inspecting and analyzing Flare Testnet Coston2.",
+    "Songbird Explorer": "Blockscout tool for inspecting and analyzing Songbird Canary-Network.",
+    "Coston Explorer": "Blockscout tool for inspecting and analyzing Songbird Testnet Coston.",
+    "Flare Systems Explorer": "Explorer for FTSO, FDC, provider and epoch metrics on Flare Mainnet.",
+    "Coston2 Systems Explorer": "Explorer for FTSO, FDC, provider and epoch metrics on Flare Testnet Coston2.",
+    "Songbird Systems Explorer": "Explorer for FTSO, FDC, provider and epoch metrics on Songbird Canary-Network.",
+    "Coston Systems Explorer": "Explorer for FTSO, FDC, provider and epoch metrics Songbird Testnet Coston.",
+    "Arkham Intel": "Blockchain analytics platform for de-anonymizing onchain wallets and transactions.",
+    "Dfns": "Wallets-as-a-service platform to streamline digital asset operations and onboard users into crypto.",
+    "Catenalytica": "FTSO performance, vote power insights, reward analytics and real-time network monitoring.",
+    "FlareBase": "Web and REST APIs for key data and insights from Flare."
+  },
+  "networkTools": {
+    "flare": {
+      "name": "Flare Mainnet",
+      "categories": {
+        "Bridges": [
+          {
+            "name": "LayerZero V2",
+            "link": "https://docs.layerzero.network/v2/deployments/chains/flare"
+          },
+          {
+            "name": "Stargate V2",
+            "link": "https://stargateprotocol.gitbook.io/stargate/v/v2-developer-docs/technical-reference/mainnet-contracts#flare"
+          },
+          {
+            "name": "zkBridge",
+            "link": "https://docs.zkbridge.com/layerzero-zklightclient-configurations/layerzero-v2-zklightclient-dvn-addresses"
+          }
+        ],
+        "RPCs": [
+          {
+            "name": "QuickNode",
+            "link": "https://www.quicknode.com/chains/flare"
+          },
+          {
+            "name": "NOWNodes",
+            "link": "https://nownodes.io/"
+          },
+          {
+            "name": "Ankr",
+            "link": "https://www.ankr.com/rpc/flare/"
+          },
+          {
+            "name": "ChainList",
+            "link": "https://ChainList.org/chain/14"
+          }
+        ],
+        "OFTs": [
+          {
+            "name": "USD₮0",
+            "link": "https://docs.usdt0.to/technical-documentation/deployments"
+          },
+          {
+            "name": "flrETH",
+            "link": "https://dinero.xyz/docs/deployed-contracts#flr-eth-contracts"
+          },
+          {
+            "name": "USDC.e, WETH, USDT",
+            "link": "https://stargateprotocol.gitbook.io/stargate/v2-developer-docs/technical-reference/mainnet-contracts#flare"
+          }
+        ],
+        "Indexers": [
+          {
+            "name": "Envio",
+            "link": "https://docs.envio.dev/docs/HyperIndex/flare"
+          },
+          {
+            "name": "Goldsky",
+            "link": "https://docs.goldsky.com/chains/flare"
+          },
+          {
+            "name": "sqd",
+            "link": "https://docs.sqd.dev/subsquid-network/reference/networks/#evm--ethereum-compatible"
+          },
+          {
+            "name": "SubQuery",
+            "link": "https://academy.subquery.network/indexer/quickstart/quickstart_chains/flare.html"
+          }
+        ],
+        "Wallet SDKs": [
+          {
+            "name": "Turnkey",
+            "link": "https://docs.turnkey.com/networks/ethereum"
+          },
+          {
+            "name": "Wagmi",
+            "link": "https://wagmi.sh/react/chains"
+          },
+          {
+            "name": "MetaMask Embedded Wallets",
+            "link": "https://docs.metamask.io/embedded-wallets/connect-blockchain/evm/flare/"
+          },
+          {
+            "name": "Etherspot Prime SDK",
+            "link": "https://etherspot.fyi/prime-sdk/other-chains/getting-started-on-flare"
+          },
+          {
+            "name": "Etherspot Modular SDK",
+            "link": "https://etherspot.fyi/modular-sdk/intro"
+          },
+          {
+            "name": "Dfns",
+            "link": "https://docs.dfns.co/networks"
+          },
+          {
+            "name": "RainbowKit",
+            "link": "https://www.rainbowkit.com/docs/introduction"
+          }
+        ],
+        "Full-stack infra": [
+          {
+            "name": "Tenderly",
+            "link": "https://docs.tenderly.co/supported-networks"
+          },
+          {
+            "name": "Thirdweb",
+            "link": "https://14.rpc.thirdweb.com"
+          }
+        ],
+        "Analytics": [
+          {
+            "name": "Dune",
+            "link": "https://dune.com/flare/flare-network-overview"
+          },
+          {
+            "name": "Sentora",
+            "link": "https://sentora.com/research/dashboards/flare-defi-ecosystem"
+          },
+          {
+            "name": "Arkham Intel",
+            "link": "https://intel.arkm.com/explorer/entity/flare-network"
+          },
+          {
+            "name": "Flare Metrics",
+            "link": "https://flaremetrics.io/defi"
+          },
+          {
+            "name": "Catenalytica",
+            "link": "https://catenalytica.com"
+          },
+          {
+            "name": "FlareBase",
+            "link": "https://flare-base.io/flare"
+          }
+        ],
+        "Explorers": [
+          {
+            "name": "Flare Explorer",
+            "link": "https://flare-explorer.flare.network"
+          },
+          {
+            "name": "Flare Systems Explorer",
+            "link": "https://flare-systems-explorer.flare.network"
+          },
+          {
+            "name": "Flare Space",
+            "link": "https://flare.space"
+          }
+        ]
+      }
+    },
+    "coston2": {
+      "name": "Flare Testnet Coston2",
+      "categories": {
+        "Bridges": [
+          {
+            "name": "LayerZero V2",
+            "link": "https://docs.layerzero.network/v2/deployments/chains/flare-testnet"
+          }
+        ],
+        "RPCs": [
+          {
+            "name": "QuickNode",
+            "link": "https://www.quicknode.com/chains/flare"
+          },
+          {
+            "name": "NOWNodes",
+            "link": "https://nownodes.io/"
+          },
+          {
+            "name": "Ankr",
+            "link": "https://www.ankr.com/rpc/flare/"
+          },
+          {
+            "name": "ChainList",
+            "link": "https://ChainList.org/chain/114"
+          }
+        ],
+        "OFTs": [],
+        "Indexers": [
+          {
+            "name": "Goldsky",
+            "link": "https://docs.goldsky.com/chains/flare"
+          }
+        ],
+        "Wallet SDKs": [
+          {
+            "name": "Turnkey",
+            "link": "https://www.turnkey.com"
+          },
+          {
+            "name": "Wagmi",
+            "link": "https://wagmi.sh/react/chains"
+          },
+          {
+            "name": "MetaMask Embedded Wallets",
+            "link": "https://docs.metamask.io/embedded-wallets/connect-blockchain/evm/flare/"
+          },
+          {
+            "name": "Etherspot Prime SDK",
+            "link": "https://etherspot.fyi/prime-sdk/intro"
+          },
+          {
+            "name": "Etherspot Modular SDK",
+            "link": "https://etherspot.fyi/modular-sdk/intro"
+          },
+          {
+            "name": "RainbowKit",
+            "link": "https://www.rainbowkit.com/docs/introduction"
+          }
+        ],
+        "Full-stack infra": [
+          {
+            "name": "Tenderly",
+            "link": "https://tenderly.co"
+          },
+          {
+            "name": "Thirdweb",
+            "link": "https://114.rpc.thirdweb.com"
+          }
+        ],
+        "Analytics": [],
+        "Explorers": [
+          {
+            "name": "Coston2 Explorer",
+            "link": "https://coston2-explorer.flare.network"
+          },
+          {
+            "name": "Coston2 Systems Explorer",
+            "link": "https://coston2-systems-explorer.flare.network"
+          }
+        ]
+      }
+    },
+    "songbird": {
+      "name": "Songbird Canary-Network",
+      "categories": {
+        "Bridges": [],
+        "RPCs": [
+          {
+            "name": "NOWNodes",
+            "link": "https://nownodes.io/"
+          },
+          {
+            "name": "Ankr",
+            "link": "https://www.ankr.com/rpc/flare/"
+          },
+          {
+            "name": "ChainList",
+            "link": "https://ChainList.org/chain/19"
+          }
+        ],
+        "OFTs": [],
+        "Indexers": [
+          {
+            "name": "SubQuery",
+            "link": "https://academy.subquery.network/indexer/quickstart/quickstart_chains/flare.html"
+          }
+        ],
+        "Wallet SDKs": [
+          {
+            "name": "Wagmi",
+            "link": "https://wagmi.sh/react/chains"
+          },
+          {
+            "name": "RainbowKit",
+            "link": "https://www.rainbowkit.com/docs/introduction"
+          },
+          {
+            "name": "MetaMask Embedded Wallets",
+            "link": "https://docs.metamask.io/embedded-wallets/connect-blockchain/evm/songbird/"
+          }
+        ],
+        "Full-stack infra": [
+          {
+            "name": "Tenderly",
+            "link": "https://tenderly.co"
+          },
+          {
+            "name": "Thirdweb",
+            "link": "https://19.rpc.thirdweb.com"
+          }
+        ],
+        "Analytics": [
+          {
+            "name": "FlareBase",
+            "link": "https://flare-base.io/songbird"
+          }
+        ],
+        "Explorers": [
+          {
+            "name": "Songbird Explorer",
+            "link": "https://songbird-explorer.flare.network"
+          },
+          {
+            "name": "Songbird Systems Explorer",
+            "link": "https://songbird-systems-explorer.flare.network"
+          }
+        ]
+      }
+    },
+    "coston": {
+      "name": "Songbird Testnet Coston",
+      "categories": {
+        "Bridges": [],
+        "RPCs": [
+          {
+            "name": "NOWNodes",
+            "link": "https://nownodes.io/"
+          },
+          {
+            "name": "Ankr",
+            "link": "https://www.ankr.com/rpc/flare/"
+          },
+          {
+            "name": "ChainList",
+            "link": "https://ChainList.org/chain/16"
+          }
+        ],
+        "OFTs": [],
+        "Indexers": [],
+        "Wallet SDKs": [
+          {
+            "name": "Wagmi",
+            "link": "https://wagmi.sh/react/chains"
+          },
+          {
+            "name": "RainbowKit",
+            "link": "https://www.rainbowkit.com/docs/introduction"
+          },
+          {
+            "name": "MetaMask Embedded Wallets",
+            "link": "https://docs.metamask.io/embedded-wallets/connect-blockchain/evm/songbird/"
+          }
+        ],
+        "Full-stack infra": [
+          {
+            "name": "Tenderly",
+            "link": "https://tenderly.co"
+          },
+          {
+            "name": "Thirdweb",
+            "link": "https://16.rpc.thirdweb.com"
+          }
+        ],
+        "Analytics": [],
+        "Explorers": [
+          {
+            "name": "Coston Explorer",
+            "link": "https://coston-explorer.flare.network"
+          },
+          {
+            "name": "Coston Systems Explorer",
+            "link": "https://coston-systems-explorer.flare.network"
+          }
+        ]
+      }
+    }
+  }
+}

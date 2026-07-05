@@ -1,6 +1,3 @@
-developer-hub
-.env
-
 # Standard project ignores
 node_modules
 .next

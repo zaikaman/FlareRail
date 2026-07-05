@@ -1,0 +1,156 @@
+---
+sidebar_position: 1
+slug: overview
+title: Scaling
+description: Scaling is an advanced framework designed to optimize the functionality and efficiency of FTSOv2.
+keywords:
+  [
+    ftso,
+    oracle,
+    flare-time-series-oracle,
+    flare-network,
+    commit-reveal,
+    weighted median,
+  ]
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import YouTubeEmbed from "@site/src/components/YouTubeEmbed";
+
+**Scaling** is an advanced framework designed to complement FTSOv2's block-latency feeds by providing robust commit-reveal anchored prices every 90 seconds.
+It operates through data providers who submit feed estimates weighted by their stake in the network.
+These estimates are processed using a weighted median algorithm to determine consensus feed values.
+Scaling offers several enhancements:
+
+- **Broad coverage:** Up to 1000 data feeds across equities, commodities, and crypto, with 2 weeks of historical data.
+
+- **Integrity:** Commit-reveal with approximately 100 independent providers every 90 seconds.
+
+- **Efficiency**: Median calculation and optimized storage uses \<5% of network bandwidth at peak usage.
+
+## Architecture
+
+<ThemedImage
+  alt="Diagram showing Scaling commit-reveal-sign-finalize process."
+  sources={{
+    light: useBaseUrl("img/docs/ftso/overview/voting-epoch.light.svg"),
+    dark: useBaseUrl("img/docs/ftso/overview/voting-epoch.dark.svg"),
+  }}
+/>
+
+Scaling is structured into four phases:
+
+- **Commit**: Data providers compute and submit data proposals encoded in a commit hash.
+  To maintain security, the actual feed values are not disclosed at this stage.
+
+- **Reveal**: Data providers reveal their data to one another, alongside the random numbers used to generate their commit hash.
+
+- **Sign**: Valid data reveals are used to calculate median values, which are aggregated into an efficient Merkle tree structure and published onchain.
+
+- **Finalization**: Once a sufficient weight of signatures for the same Merkle root is collected, a randomly selected set of providers (or any other entity in case of a failure), can collect and submit them onchain for verification.
+
+Once the finalization phase is complete, the Merkle root is published onchain, making it available to all other smart contracts for verification of calculation results.
+This structured approach not only maintains data integrity and accuracy but also incentivizes active participation from data providers, contributing to the overall efficiency and reliability of Scaling.
+
+:::tip[Interested in learning more?]
+
+For a detailed explanation of the Scaling mechanism, read Section 2 of the [FTSOv2 whitepaper](https://dev.flare.network/pdf/whitepapers/20240223-FlareTimeSeriesOracleV2.pdf).
+
+:::
+
+### Weighted Median Calculation
+
+Scaling uses a weighted median to determine the consensus feed value from multiple data providers.
+This ensures that prices reflect the stake-weighted consensus, rewarding honest participants while making manipulation costly.
+
+#### How it works
+
+1. **Collect estimates:** All valid feed submissions are gathered.
+2. **Sort by value:** Estimates are ordered from lowest to highest.
+3. **Assign weights:** Each submission is weighted by the provider's stake (voting power).
+4. **Calculate threshold:** Compute the total weight $W$, then take half ($M = W/2$).
+5. **Accumulate weights:** Move through the sorted list, adding weights until the cumulative total ≥ $M$.
+6. **Select median:** The corresponding feed value is the weighted median.
+
+**In summary:** Line up all providers' values, give each one influence proportional to their stake, then find the middle point of this weighted distribution.
+
+<details> 
+<summary>Step-by-step illustration.</summary>
+
+Suppose we have the following data estimates from five providers with their corresponding weights:
+
+| **Estimate (Feed Value)** | **Weight** |
+| ------------------------- | ---------- |
+| 250                       | 4          |
+| 200                       | 2          |
+| 100                       | 1          |
+| 150                       | 3          |
+| 300                       | 1          |
+
+First, sort these estimates:
+
+| **Estimate (Feed Value)** | **Weight** |
+| ------------------------- | ---------- |
+| 100                       | 1          |
+| 150                       | 3          |
+| 200                       | 2          |
+| 250                       | 4          |
+| 300                       | 1          |
+
+Calculate the total weight: $W = 1 + 3 + 2 + 4 + 1 = 11$.
+
+The median threshold $ M $ is $ \frac{W}{2} = 5.5 $.
+
+Accumulate the weights:
+
+- For 100: Cumulative weight = 1
+- For 150: Cumulative weight = 1 + 3 = 4
+- For 200: Cumulative weight = 4 + 2 = 6
+
+At this point, the cumulative weight (6) exceeds the median threshold (5.5).
+Here, the weighted median is 200, which best represents the majority stake-weighted consensus.
+
+</details>
+
+This weighted median calculation ensures that the consensus feed value reflects the most influential estimates, balancing the data based on the providers' voting power.
+This method is designed to be robust against outliers and manipulation, ensuring a fair and reliable consensus process.
+
+### Incentivization Mechanism
+
+Scaling's incentive model is designed to keep data providers active, accurate, and honest, while ensuring the long-term integrity of the feeds.
+Rewards and penalties are applied each voting epoch, balancing positive incentives with strict accountability.
+
+#### Rewards
+
+The total reward pool for each epoch is divided into three parts:
+
+- **Median closeness rewards:** Granted to providers whose submissions fall within the interquartile range (IQR) band of the finalized value.
+  - If a submission lies exactly on the IQR boundary, a pseudo-random process determines inclusion.
+  - Additional governance-defined reward bands (fixed % around the finalized value) further refine fair allocation.
+- **Signature rewards:** Earned for correctly signing and contributing to the Merkle tree of revealed values.
+- **Finalization rewards:** Paid to the provider (or fallback entity) that successfully submits the finalized Merkle root onchain.
+
+#### Penalties
+
+To discourage manipulation and negligence:
+
+- **Non-matching or missing reveals:** Reduced or forfeited rewards.
+- **Consistently invalid submissions:** Negative cumulative rewards, making them non-claimable.
+- R**andomness omissions:** Penalties for failing to supply valid random numbers during commit-reveal, preventing gaming of the system.
+
+#### Additional incentives
+
+- **Inflation reward offers:** Automatically triggered for certain feeds to guarantee coverage.
+- **Community reward offers:** Anyone can sponsor extra rewards for specific feeds before a reward epoch.
+
+:::info[Why this matters]
+
+This layered reward and penalty system makes accurate reporting economically attractive and misbehavior costly.
+As a result, Scaling maintains robust participation across both common and niche feeds, strengthening the reliability of Flare's oracle infrastructure.
+
+:::
+
+## Watch the video
+
+<YouTubeEmbed videoId="4mAT1v8gZMQ"></YouTubeEmbed>

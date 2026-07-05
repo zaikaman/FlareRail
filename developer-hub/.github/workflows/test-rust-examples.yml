@@ -1,0 +1,36 @@
+name: Test Rust Examples
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "examples/developer-hub-rust/**"
+      - ".github/workflows/test-rust-examples.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Rust Examples
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./examples/developer-hub-rust
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: Format with rustfmt
+        run: cargo fmt -- --check
+      - name: Lint with clippy
+        run: cargo clippy --bins -- -D warnings
+      - name: Build
+        run: cargo build --bins --locked
+      - name: Run tests
+        run: ./test.sh

@@ -1,0 +1,188 @@
+---
+title: Redemption
+description: Understand how redemptions work in FAssets.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
+---
+
+Any holder of FAssets can redeem their FAssets for the underlying original asset.
+To do so, these holders, known as redeemers, send FAssets to the Asset Manager smart contract, and the redeemed amount is paid with the underlying asset from an agent's address.
+
+## Redemption Process
+
+This is the summary of the redemption process:
+
+1. The redeemer starts the redemption by issuing a request to the Asset Manager smart contract.
+   The standard `redeem` method requires a whole number of lots, while `redeemAmount` and `redeemWithTag` allow redeeming any amount.
+
+   The FAssets system chooses one or more redemption tickets from the front of the [FIFO redemption queue](/fassets/minting#redemption-tickets-and-the-redemption-queue).
+   The number of chosen redemption tickets is capped to avoid high gas consumption.
+   If the redemption amount requires too many tickets, only a partial redemption is done.
+
+2. The system burns FAssets from the redeemer's account in the amount of the total of the selected redemption tickets.
+   If the redeemer's account does not contain enough FAssets, the redemption fails immediately.
+
+3. Each chosen ticket belongs to an agent.
+   For every agent participating in the redemption, the system issues an event with the following redemption payment information:
+   - Redeemer's underlying address.
+
+     Agents can use the Flare Data Connector to ensure the validity of this address.
+     Otherwise, malicious redeemers could provide an address that systematically blocks payments and exploits the redeeming process to their advantage.
+
+   - Amount to pay minus the fee that was already subtracted.
+   - [A payment reference](/fassets/minting#minting-payment-reference).
+     This payment reference is different for each agent and each redemption.
+   - The last underlying block and the last underlying timestamp to complete the payment.
+
+4. Every agent pays the redeemer on the underlying chain and includes the payment reference in the memo field of the payment transaction.
+
+   Agents can pay the redemption from their own address, which they control on the underlying chain.
+   It does not need to be the same address where they receive minting payments.
+
+5. After the payment is finalized, the agent uses the [FDC](/fdc/overview) to prove the payment and obtain a payment proof.
+
+6. The agent (or, in Core Vault and specific flows, the **executor**) presents the payment proof to the FAssets system, which issues a **redemption ticket**.
+
+   The executor role is responsible for ensuring that the system can finalize redemptions even if the agent is unresponsive or if the flow is managed by a central entity (such as the Core Vault executor).
+
+   The redemption ticket is required to:
+   - Prove the payment has occurred.
+   - Trigger burning of the FAssets.
+   - Release the corresponding agent's vault collateral and pool collateral.
+   - Ensure the system tracks the underlying chain balances correctly.
+
+   After the collateral is released, it can either back the minting of more FAssets or be withdrawn.
+
+## Redeem Any Amount
+
+The standard `redeem` method requires whole lots.
+The `redeemAmount` method allows redeeming **any amount** of FAssets, which is useful for redeeming yields or partial amounts that don not align with lot boundaries.
+
+No redemption through `redeemAmount` or `redeemWithTag` can be smaller than `minimumRedeemAmountUBA` to prevent uneconomical micro-redemptions.
+If the requested amount requires too many redemption tickets, only a partial redemption is performed and the remaining amount is returned in a `RedemptionAmountIncomplete` event.
+
+## Redeem with Tag
+
+The `redeemWithTag` method allows the redeemer to request an **XRP destination tag** on the redemption payment.
+This is useful when redeeming directly to an exchange address that requires a destination tag.
+Like `redeemAmount`, it also supports redeeming any amount, not just whole lots.
+
+The destination tag must fit in a 32-bit integer.
+This is an XRP-only feature, gated by the `redeemWithTagSupported` flag.
+Confirming a redemption with a tag requires the `confirmXRPRedemptionPayment` method, which uses a dedicated FDC proof type that supports destination tags.
+If the agent fails to pay, the redeemer calls `xrpRedemptionPaymentDefault` to trigger the default process.
+
+## Fees
+
+These fees are charged when a user redeems FAssets for the underlying asset:
+
+| Fee Name           | Charged In                            | Status     | Purpose                                                                                                                       |
+| :----------------- | :------------------------------------ | :--------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| **Redemption Fee** | Underlying Asset (e.g., XRP for FXRP) | Obligatory | Compensates the agent and collateral pool for providing the redemption service.                                               |
+| **Executor Fee**   | FLR                                   | Optional   | Compensates an optional executor who triggers redemption defaults when agents fail to pay, saving redeemers extra operations. |
+
+### Redemption Fee
+
+The redemption fee is deducted from the amount of the underlying asset sent to the redeemer.
+The fee is split between the agent and the collateral pool:
+
+- **Agent**: Receives a portion of the fee as profit for providing the redemption service.
+- **Collateral Pool**: Receives the remaining portion of the fee, which is minted as new FAssets and deposited into the pool, increasing value for pool token holders.
+
+The fee percentage is defined in the operational parameters by governance and is the same for all agents, while the split ratio between the agent and the collateral pool is configured in each agent's settings.
+
+### Executor Fee
+
+An optional executor fee can be paid to compensate an executor who triggers a redemption default if the agent fails to pay on the underlying chain.
+This spares the redeemer from having to perform extra operations to complete the redemption process.
+
+The executor fee is paid in FLR, and the amount is agreed upon off-chain between the redeemer and the executor.
+This fee is only applicable when an executor is involved in the redemption process.
+
+## Redemption-Payment Failure
+
+Agents have a limited time to pay the redeemer on the underlying chain.
+The last block and the last timestamp on the underlying chain define the amount of time.
+If the payment is not made in time, the redeemer has to prove [payment non-existence](/fdc/attestation-types/referenced-payment-nonexistence) to be compensated.
+After the redeemer presents the payment non-existence proof, he is paid with the agent's collateral plus a _redemption default premium_.
+The premium is intended to encourage the agent to complete redemptions by paying with the underlying asset instead of collateral.
+
+If a payment fails and the failed transaction is recorded on the underlying chain, the agent must submit proof of the failed payment.
+In this way, the gas costs of the failed transaction can be accounted for by the FAssets system.
+If the transaction was not recorded, then no gas was spent, and reporting is not necessary.
+
+If the agent does not report the failed payment in time, anyone (including the executor) can report the failed payment and receive a reward from the agent's vault.
+
+:::info
+
+    When payment fails because of the redeemer, the agent can obtain proof of the failed payment from the Flare Data Connector and present it to the FAssets system.
+    The agent's obligation is then fulfilled, and he can keep both the collateral and the underlying.
+
+    Two different proofs can be used:
+
+    * Proof of invalid address, due to a wrong syntax or checksum, for example.
+    * Proof of blocked payment: Even if the address is valid, it might contain a contract that blocks the payment.
+        This can only occur on underlying networks that support smart contracts.
+
+        The agent must still try to pay, and if the payment is blocked, the agent can request this proof from the Flare Data Connector and present it to the FAssets system.
+
+:::
+
+During step 4 above, if any agent does not pay on the underlying chain, the redeemer completes the following procedure separately for each nonpaying agent:
+
+1. The redeemer obtains a proof of payment non-existence from the Flare Data Connector.
+2. The redeemer presents the payment non-existence proofs to the FAssets system, which triggers a redemption failure.
+3. The redeemer is paid with collateral, according to the current price plus a premium.
+4. FAssets are overcollateralized, so, even after paying the redeemer with a premium, a remainder is released.
+   This remainder is derived from the [system-wide collateral ratio settings](/fassets/collateral#system-wide-thresholds) specified by governance.
+5. The underlying assets backing the redeemed FAssets are marked as free and can be withdrawn by the agent later.
+
+## Redemption Time Extension
+
+When many redemption requests target the same agent in rapid succession, the system automatically extends the agent's payment deadline.
+Each new redemption request adds time to the deadline, which then gradually decays back to the baseline as the volume of requests decreases.
+This mechanism prevents agents from being overwhelmed by a burst of redemptions and failing to pay in time through no fault of their own.
+
+## Edge Cases
+
+### Unresponsive redeemer
+
+After a redemption nonpayment, the redeemer might not report the failure for some reason.
+In this case, the agent or the executor can present a payment non-existence proof, and the redeemer receives collateral plus a premium.
+After this operation, the underlying backing collateral and the remaining local collateral are released.
+
+### Unresponsive agent
+
+After a successful payment, the agent might not present the payment proof (redemption ticket).
+
+Because the agent has already paid, the redeemer is not affected.
+However, the system still requires the payment proof to track the agent's balance on the underlying chain correctly.
+After enough time for the agent to present the proof has elapsed, anyone, including the executor, can show the payment proof and receive collateral from the agent's vault as a reward.
+
+### Expired proof
+
+Proofs provided by the [Flare Data Connector](/fdc/overview) can be created for 14 days and remain valid indefinitely once created.
+If neither the redeemer, the agent, nor the executor presents proof of payment or evidence of non-payment within the 14-day window, the regular redemption process cannot continue, and the agent's collateral could be locked indefinitely.
+
+The procedure to recover this collateral is the same as the procedure in the minting case.
+
+## Self-redemption
+
+Agents can also act as users and redeem FAssets from their own vaults.
+This process is called self-redemption or self-closing, and it is simplified because payment on the underlying chain is not required.
+
+As shown in the following process, agents can self-redeem for any reason, including to prevent liquidations, as it reduces the amount of FAssets the agent is backing.
+
+1. An agent sends FAssets to their account.
+2. FAssets are burned.
+3. The collateral that was backing those assets is released.
+4. The underlying collateral is released and can be withdrawn from the underlying address later.
+
+The self-redeemed amount is not limited to a positive integer of lots and can be less than one lot, which makes self-closing ideal for redeeming an agent's dust.
+
+:::tip[What's next]
+
+Learn more about the different components and processes involved in FAssets - [collateral](/fassets/collateral), [minting](/fassets/minting), [liquidations](/fassets/liquidation), and [Core Vault](/fassets/core-vault).
+
+For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-direct-minting), and [redemption](/fassets/developer-guides/fassets-redeem) guides to get started with FAssets integration.
+
+:::

@@ -1,0 +1,117 @@
+---
+slug: faqs
+title: FAQs
+description: Frequently Asked Questions for developers building on Flare.
+keywords:
+  [
+    faq,
+    frequently-asked-questions,
+    troubleshooting,
+    faucet,
+    grants,
+    support,
+    evm,
+    solidity,
+    flare-network,
+    songbird-network,
+  ]
+---
+
+import SetEvmVersionRemix from "/static/img/docs/network/set-evm-version-remix.png";
+
+This page answers common questions encountered by developers building applications on Flare networks.
+
+## Network & Tokens
+
+### Where can I get testnet tokens (faucet)?
+
+Flare provides faucets for its public testnets:
+
+- **Flare Testnet Coston2:** Get C2FLR, FXRP, and USDT0 from the [Coston2 Faucet](https://faucet.flare.network/coston2).
+  Use Coston2 for testing applications intended for Flare mainnet.
+- **Songbird Testnet Coston:** Get CFLR from the [Coston Faucet](https://faucet.flare.network/coston).
+  Use Coston for testing applications intended for the Songbird canary network.
+
+### How do I add Flare/Songbird networks to my wallet (e.g., MetaMask)?
+
+The easiest way is to visit the respective block explorer, click on **Connect** in the top right corner, and approve adding the network to your wallet.
+
+- **Flare Mainnet:** [Flare Explorer](https://flare-explorer.flare.network/)
+- **Coston2 Testnet:** [Coston2 Explorer](https://coston2-explorer.flare.network/)
+- **Songbird Canary-Network:** [Songbird Explorer](https://songbird-explorer.flare.network/)
+- **Coston Testnet:** [Coston Explorer](https://coston-explorer.flare.network/)
+
+Alternatively, you can add them manually using the details on the [Network Configuration](/network/overview#configuration) page.
+
+### What's the difference between Flare and Songbird?
+
+- **Flare (FLR):** The main production network with real economic value.
+- **Songbird (SGB):** A "canary network" - blockchain used for testing protocol-level features and dApps in a live environment with real consequences before they are potentially deployed to Flare.
+  It serves as a proving ground.
+
+Read more on the [Network Overview](/network/overview) page.
+
+### Which RPC endpoint should I use?
+
+- **For Development/Testing:** The [Public RPCs](/network/overview#configuration) are convenient for getting started.
+  However, they have rate limits and shared resources.
+- **For Production Applications:** It is **strongly recommended** to use a dedicated RPC endpoint from a provider for better performance, reliability, and support.
+  See the [Developer Tools](/network/developer-tools#rpcs) page for options.
+- **For Running Nodes:** You can also run your own [RPC node](/run-node#rpc-node).
+
+### What is the block time and finality on Flare?
+
+Flare networks use the Snowman++ consensus protocol.
+
+- **Block Time:** Approximately 1.8 seconds.
+- **Finality:** Near-instantaneous (single-slot finality).
+  Once a block is accepted by consensus, it's considered final.
+
+Learn more on the [Consensus](/network/consensus) page.
+
+## Development Resources
+
+### Where can I find the addresses of Flare's core smart contracts?
+
+The addresses for contracts like `WNat`, `FtsoV2`, `FdcHub`, etc., vary by network.
+
+1.  **Use the `FlareContractRegistry`:** This contract acts as a directory.
+    It has the **same address** (`0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019`) on **all** Flare networks (Flare, Coston2, Songbird, Coston).
+    You can query its [`getContractAddressByName`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) or [`getAllContracts`](/network/solidity-reference/IFlareContractRegistry#getallcontracts) methods to find the addresses of other contracts on the specific network you are connected to.
+2.  **Check the Solidity Reference:** Deployed contract addresses for each network are listed on the relevant reference pages for convenience:
+    - [Network Reference](/network/solidity-reference)
+    - [FSP Reference](/network/fsp/solidity-reference)
+    - [FTSOv2 Reference](/ftso/solidity-reference)
+    - [Scaling Reference](/ftso/scaling/solidity-reference)
+    - [FDC Reference](/fdc/reference)
+    - [FAssets Reference](/fassets/reference)
+
+### Are there official developer tools or SDKs?
+
+Flare maintains several resources to aid development:
+
+- **Language-Specific Guides:** Tutorials for interacting with Flare using [JavaScript](/network/guides/flare-for-javascript-developers), [Python](/network/guides/flare-for-python-developers), [Go](/network/guides/flare-for-go-developers), and [Rust](/network/guides/flare-for-rust-developers).
+- **Starter Kits:** Pre-configured project templates for [Hardhat & Foundry](/network/guides/hardhat-foundry-starter-kit).
+- **Developer Tools List:** A curated list of [RPCs, Indexers, Bridges, SDKs, and more](/network/developer-tools).
+
+### Where can I learn about Flare-specific terminology?
+
+Learn more about the terminology used in the Flare ecosystem (like FTSO, FSP, PDA, etc.) on the [Terminology](/support/terminology) page.
+
+## Community & Support
+
+### I have a project I would like to build on Flare. Can I get a grant?
+
+Yes!
+The Flare Foundation offers grants to support innovative projects that contribute to the ecosystem's growth.
+Learn more and apply on the [Flare Grants Program](https://flare.network/resources/grants) page.
+
+### Where can I get technical support or ask questions?
+
+Connect with Flare's developer community and the team through these channels:
+
+- **Flare Experts:** Get dedicated [Technical Support](https://flare.network/resources/technical-support) from a Flare expert.
+- **Telegram:** The primary channel for community Q&A and developer discussions.
+  Join [Flare Network on Telegram](https://t.me/FlareNetwork).
+- **GitHub:** Report issues, contribute to code, or explore the open-source repositories at [Flare Foundation GitHub](https://github.com/flare-foundation/).
+  (Best for code-specific issues, not general Q&A).

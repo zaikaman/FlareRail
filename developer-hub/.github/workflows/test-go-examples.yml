@@ -1,0 +1,32 @@
+name: Test Go Examples
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "examples/developer-hub-go/**"
+      - ".github/workflows/test-go-examples.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Go Examples
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./examples/developer-hub-go
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache-dependency-path: "examples/developer-hub-go/go.sum"
+      - run: go mod download
+      - run: go vet ./...
+      - name: Run Tests
+        run: |
+          go test ./coston2 -v
+          go test ./flare -v

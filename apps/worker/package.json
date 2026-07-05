@@ -12,5 +12,12 @@
   "devDependencies": {
     "tsx": "^4.19.0",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@flarerail/config": "^0.1.0",
+    "@flarerail/contracts": "^0.1.0",
+    "@flarerail/core": "^0.1.0",
+    "bullmq": "^5.79.2",
+    "ioredis": "^5.11.1"
   }
 }

@@ -1,0 +1,296 @@
+---
+title: IReferencedPaymentNonexistence
+sidebar_position: 11
+description: Assert whether an agreed-upon payment has not been made.
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import PaymentDeadlineEnforcer from "!!raw-loader!/examples/developer-hub-solidity/PaymentDeadlineEnforcer.sol";
+import RemixEmbed from "@site/src/components/RemixEmbed";
+
+An interface to verify that a specific payment, agreed to be completed by a certain deadline, has **not been made** on an external blockchain.
+
+Sourced from `IReferencedPaymentNonexistence.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IReferencedPaymentNonexistence.sol).
+
+## Overview
+
+The IReferencedPaymentNonexistence interface enables smart contracts on Flare networks to verify the absence of specific payment transactions on external blockchains.
+This type of attestation is particularly useful for conditional agreements where the absence of a payment by a deadline triggers consequences, such as liquidating collateral or executing penalties in cross-chain financial arrangements.
+
+## Supported Chains
+
+| Network Type | Supported Chains                                       |
+| ------------ | ------------------------------------------------------ |
+| **Mainnet**  | `BTC` (Bitcoin), `DOGE` (Dogecoin), `XRP` (XRP Ledger) |
+| **Testnet**  | `testBTC` (Bitcoin Testnet 4), `testDOGE`, `testXRP`   |
+
+## Chain-Specific Verification Criteria
+
+### UTXO Chains (Bitcoin and Dogecoin)
+
+A transaction is considered a match (and would invalidate the nonexistence claim) if all of the following are true:
+
+- It is **not** a coinbase transaction
+- The transaction includes the specified standard payment reference
+- If `checkSourceAddresses` is true, the source addresses root matches the specified one
+- The sum of outputs to the destination address, minus any inputs from that address, exceeds the specified amount
+- The transaction appears within the specified block range
+
+### Account-based Chains (XRPL)
+
+A transaction is considered a match (and would invalidate the nonexistence claim) if all of the following are true:
+
+- The transaction is of type "Payment"
+- The transaction includes the specified standard payment reference
+- If `checkSourceAddresses` is true, the source addresses root matches the specified one
+- One of the following conditions is met:
+  - Transaction status is "SUCCESS" and the amount received by the destination address exceeds the specified amount
+  - Transaction status is "RECEIVER_FAILURE" and the amount that would have been received exceeds the specified amount
+- The transaction appears within the specified block range
+
+## Interface Definition
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.7.6 <0.9;
+
+/**
+ * @custom:name IReferencedPaymentNonexistence
+ * @custom:id 0x04
+ * @custom:supported BTC, DOGE, XRP
+ * @author Flare
+ * @notice Assertion that an agreed-upon payment has not been made by a certain deadline.
+ * A confirmed request shows that a transaction meeting certain criteria (address, amount, reference)
+ * did not appear in the specified block range.
+ *
+ *
+ * This type of attestation can be used to e.g. provide grounds to liquidate funds locked by a smart
+ * contract on Flare when a payment is missed.
+ *
+ * @custom:verification If `firstOverflowBlock` cannot be determined or does not have a sufficient
+ * number of confirmations, the attestation request is rejected.
+ * If `firstOverflowBlockNumber` is higher or equal to `minimalBlockNumber`, the request is rejected.
+ * The search range are blocks between heights including `minimalBlockNumber` and excluding `firstOverflowBlockNumber`.
+ * If the verifier does not have a view of all blocks from `minimalBlockNumber` to `firstOverflowBlockNumber`,
+ * the attestation request is rejected.
+ *
+ * The request is confirmed if no transaction meeting the specified criteria is found in the search range.
+ * The criteria and timestamp are chain specific.
+ * ### UTXO (Bitcoin and Dogecoin)
+ *
+ *
+ * Criteria for the transaction:
+ *
+ *
+ * - It is not coinbase transaction.
+ * - The transaction has the specified standardPaymentReference.
+ * - The sum of values of all outputs with the specified address minus the sum of values of all inputs with
+ * the specified address is greater than `amount` (in practice the sum of all values of the inputs with the
+ * specified address is zero).
+ *
+ *
+ * Timestamp is `mediantime`.
+ * ### XRPL
+ *
+ *
+ *
+ * Criteria for the transaction:
+ * - The transaction is of type payment.
+ * - The transaction has the specified standardPaymentReference,
+ * - One of the following is true:
+ *   - Transaction status is `SUCCESS` and the amount received by the specified destination address is
+ * greater than the specified `value`.
+ *   - Transaction status is `RECEIVER_FAILURE` and the specified destination address would receive an
+ * amount greater than the specified `value` had the transaction been successful.
+ *
+ *
+ * Timestamp is `close_time` converted to UNIX time.
+ *
+ * @custom:lut `minimalBlockTimestamp`
+ * @custom:lutlimit `0x127500`, `0x127500`, `0x127500`
+ */
+interface IReferencedPaymentNonexistence {
+    /**
+     * @notice Toplevel request
+     * @param attestationType ID of the attestation type.
+     * @param sourceId ID of the data source.
+     * @param messageIntegrityCode `MessageIntegrityCode` that is derived from the expected response as defined.
+     * @param requestBody Data defining the request. Type and interpretation is determined by the `attestationType`.
+     */
+    struct Request {
+        bytes32 attestationType;
+        bytes32 sourceId;
+        bytes32 messageIntegrityCode;
+        RequestBody requestBody;
+    }
+
+    /**
+     * @notice Toplevel response
+     * @param attestationType Extracted from the request.
+     * @param sourceId Extracted from the request.
+     * @param votingRound The ID of the FDC round in which the request was considered.
+     * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
+     * @param requestBody Extracted from the request.
+     * @param responseBody Data defining the response. The verification rules for the construction of the response
+     * body and the type are defined per specific `attestationType`.
+     */
+    struct Response {
+        bytes32 attestationType;
+        bytes32 sourceId;
+        uint64 votingRound;
+        uint64 lowestUsedTimestamp;
+        RequestBody requestBody;
+        ResponseBody responseBody;
+    }
+
+    /**
+     * @notice Toplevel proof
+     * @param merkleProof Merkle proof corresponding to the attestation response.
+     * @param data Attestation response.
+     */
+    struct Proof {
+        bytes32[] merkleProof;
+        Response data;
+    }
+
+    /**
+     * @notice Request body for ReferencePaymentNonexistence attestation type
+     * @param minimalBlockNumber The start block of the search range.
+     * @param deadlineBlockNumber The blockNumber to be included in the search range.
+     * @param deadlineTimestamp The timestamp to be included in the search range.
+     * @param destinationAddressHash The standard address hash of the address to which the payment had to be done.
+     * @param amount The requested amount in minimal units that had to be paid.
+     * @param standardPaymentReference The requested standard payment reference.
+     * @param checkSourceAddresses If true, the source address root is checked (only full match).
+     * @param sourceAddressesRoot The root of the Merkle tree of the source addresses.
+     * @custom:below The `standardPaymentReference` should not be zero (as a 32-byte sequence).
+     */
+    struct RequestBody {
+        uint64 minimalBlockNumber;
+        uint64 deadlineBlockNumber;
+        uint64 deadlineTimestamp;
+        bytes32 destinationAddressHash;
+        uint256 amount;
+        bytes32 standardPaymentReference;
+        bool checkSourceAddresses;
+        bytes32 sourceAddressesRoot;
+    }
+
+    /**
+     * @notice Response body for ReferencePaymentNonexistence attestation type.
+     * @param minimalBlockTimestamp The timestamp of the minimalBlock.
+     * @param firstOverflowBlockNumber The height of the firstOverflowBlock.
+     * @param firstOverflowBlockTimestamp The timestamp of the firstOverflowBlock.
+     * @custom:below `firstOverflowBlock` is the first block that has block number higher than
+     * `deadlineBlockNumber` and timestamp later than `deadlineTimestamp`.
+     * The specified search range are blocks between heights including `minimalBlockNumber`
+     * and excluding `firstOverflowBlockNumber`.
+     */
+    struct ResponseBody {
+        uint64 minimalBlockTimestamp;
+        uint64 firstOverflowBlockNumber;
+        uint64 firstOverflowBlockTimestamp;
+    }
+}
+```
+
+## Structs
+
+### Request
+
+Toplevel request structure.
+
+#### Parameters
+
+- `attestationType`: ID of the attestation type (0x04 for ReferencedPaymentNonexistence)
+- `sourceId`: ID of the data source (e.g., BTC, DOGE, XRP)
+- `messageIntegrityCode`: MessageIntegrityCode derived from the expected response
+- `requestBody`: Data defining the request
+
+### Response
+
+Toplevel response structure.
+
+#### Parameters
+
+- `attestationType`: Extracted from the request
+- `sourceId`: Extracted from the request
+- `votingRound`: The ID of the FDC round in which the request was considered
+- `lowestUsedTimestamp`: The lowest timestamp used to generate the response
+- `requestBody`: Extracted from the request
+- `responseBody`: Data defining the response
+
+### Proof
+
+Toplevel proof structure for verification.
+
+#### Parameters
+
+- `merkleProof`: Merkle proof corresponding to the attestation response
+- `data`: Attestation response
+
+### RequestBody
+
+Request body specific to payment nonexistence verification.
+
+#### Parameters
+
+- `minimalBlockNumber`: The starting block number of the search range
+- `deadlineBlockNumber`: The last block number to include in the search range
+- `deadlineTimestamp`: The timestamp deadline for the payment
+- `destinationAddressHash`: Standard hash of the address that should have received the payment
+- `amount`: Minimum amount that should have been received
+- `standardPaymentReference`: The specific payment reference that should have been included
+- `checkSourceAddresses`: If true, source addresses are also verified
+- `sourceAddressesRoot`: Merkle tree root of expected source addresses (if checked)
+
+### ResponseBody
+
+Response body containing search range details.
+
+#### Parameters
+
+- `minimalBlockTimestamp`: Timestamp of the first block in the search range
+- `firstOverflowBlockNumber`: Block number of the first block after the deadline
+- `firstOverflowBlockTimestamp`: Timestamp of the first block after the deadline
+
+## Block Range Definition
+
+The search range for payment verification is defined as:
+
+- **Start**: Block at `minimalBlockNumber` (inclusive)
+- **End**: Block at `firstOverflowBlockNumber` (exclusive)
+
+The `firstOverflowBlock` is determined as the first block that:
+
+1. Has a block number greater than `deadlineBlockNumber`
+2. Has a timestamp later than `deadlineTimestamp`
+
+This dual condition approach ensures that both block height and timestamp requirements are met.
+
+## Implementation Notes
+
+- Attestation ID: `0x04`
+- The `lowestUsedTimestamp` parameter uses the value of `minimalBlockTimestamp`
+- The `lutlimit` (Lowest Used Timestamp limit) is `0x127500` (1,209,600 seconds = 14 days) for all supported chains
+- The standard payment reference must not be zero
+- Request will be rejected if the verification node doesn't have visibility of all blocks in the search range
+- Request will be rejected if `firstOverflowBlockNumber` cannot be determined or lacks sufficient confirmations
+
+## Standard Payment Reference
+
+A standardized payment reference follows a specific format to ensure consistency across different blockchains:
+
+- For UTXO chains (BTC, DOGE): Derived from OP_RETURN outputs or specific patterns in transaction data
+- For XRPL: Derived from the MemoData field in the transaction
+
+The standardPaymentReference is critical for this attestation type as it uniquely identifies the specific payment being verified for nonexistence.
+
+## Usage Example
+
+<CodeBlock language="solidity" title="PaymentDeadlineEnforcer.sol">
+  {PaymentDeadlineEnforcer}
+</CodeBlock>
+<RemixEmbed fileName="PaymentDeadlineEnforcer.sol">
+  Open example in Remix
+</RemixEmbed>

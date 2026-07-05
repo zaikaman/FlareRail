@@ -1,0 +1,140 @@
+---
+title: FAssets
+description: FAssets is a trustless over-collateralized bridge to non smart contract networks to Flare.
+keywords: [fassets, flare-fassets, xrp, bitcoin, dogecoin, flare-network]
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+import MintingResources from "./_minting_resources.mdx";
+
+FAssets is a trustless, over-collateralized bridge connecting non smart contract networks to Flare.
+It enables the creation of wrapped tokens (`FAssets`) for assets like BTC, DOGE and XRP.
+These tokens can participate in Flare's DeFi ecosystem or be redeemed for their original assets.
+
+FAssets are powered by Flare's enshrined data protocols:
+
+- **[Flare Time Series Oracle (FTSO)](/ftso/overview):** Provides decentralized price feeds.
+- **[Flare Data Connector (FDC)](/fdc/overview):** Verifies offchain actions, such as transactions on other blockchains.
+
+Each FAsset is backed by a mix of collateral, including:
+
+1. Stablecoin or ETH collateral.
+2. FLR (Flare's native token) or SGB (Songbird's native token) collateral.
+
+Agents and a community-provided collateral pool ensure trustlessness through over-collateralization.
+
+<MintingResources />
+
+## FAsset Workflow
+
+<ThemedImage
+  alt="FTSO Update Architecture"
+  sources={{
+    light: useBaseUrl("img/docs/fassets/flare_fassets_architecture_light.svg"),
+    dark: useBaseUrl("img/docs/fassets/flare_fassets_architecture_dark.svg"),
+  }}
+/>
+
+Anyone on the Flare blockchain can mint FAssets, which are wrapped versions of original tokens from other blockchains, known as underlying networks.
+The original tokens from these chains, such as Ripple (XRPL), Dogecoin (DOGE), Bitcoin (BTC), and Litecoin (LTC), are referred to as underlying assets.
+For example, the FAsset version of Bitcoin is known as FBTC.
+
+### Minting
+
+    - A user (minter) selects an agent and pays a fee to reserve collateral.
+    - The user sends the underlying asset (e.g., BTC) to the agent.
+    - The FDC verifies the transaction.
+    - The equivalent FAssets (e.g., FBTC) are minted as ERC-20 tokens on Flare.
+
+### Usage
+
+Minted FAssets can be used in DeFi applications on Flare or bridged to other chains.
+
+### Redeeming
+
+Users can redeem FAssets for the original underlying assets at any time.
+
+## Key Participants
+
+### Agents
+
+Agents manage the infrastructure and operations of the FAssets system, including:
+
+- Holding the underlying assets.
+- Providing collateral for minting and redemption.
+- Redeeming underlying assets for users.
+
+Each agent is verified through governance and uses the following addresses on the native chain:
+
+- **Work Address:** A hot wallet for executing operations.
+- **Management Address:** A cold wallet for secure administrative actions.
+
+Agents must comply with the **backing factor**, which ensures sufficient collateral is locked to back FAssets.
+
+### Users
+
+Users interact with the system by:
+
+- **Minting:** Depositing underlying assets to mint FAssets.
+- **Redeeming:** Exchanging FAssets for the original underlying assets.
+
+Eligibility:
+
+- No restrictions—anyone can mint or redeem FAssets.
+
+### Collateral Providers
+
+Collateral providers supply native FLR tokens to an agent's collateral pool and earn a share of minting fees as long as their tokens remain locked.
+
+### Liquidators
+
+Liquidators maintain system health by:
+
+- Burning FAssets in exchange for collateral when an agent's collateral drops below the required minimum.
+- Earning rewards, including premiums on the collateral received.
+
+Eligibility:
+
+- Open to all—anyone can become a liquidator.
+
+### Challengers
+
+Challengers monitor agents for illegal transactions that reduce collateral below the backing factor.
+They:
+
+- Submit proof of illegal actions to the system.
+- Earn rewards from the agent's vault upon successful challenges.
+
+If an agent is found in violation, they enter **full liquidation**, permanently restricting them from new minting operations.
+
+## Core Vault
+
+The **Core Vault (CV)** is a specialized FAsset system component that enhances capital efficiency by allowing agents to store underlying assets without requiring additional collateral.
+Each asset type has its own dedicated Core Vault, which is managed by a multisig account on the underlying network under formal governance oversight.
+
+### Key Features
+
+- **Collateral Efficiency:** Agents transferring assets to the CV free up collateral, allowing them to mint additional FAssets or withdraw funds.
+- **Redemption Support:** The CV ensures that underlying assets are available for redemptions, reducing reliance on individual agents.
+- **Security & Governance:** A multisig setup controls the vault, and governance can pause in case of security concerns.
+
+### Core Vault Implementation
+
+On networks without smart contracts (e.g., XRP Ledger), the Core Vault is a **multisig account** managed by signers authorized by Flare governance.
+Movements of funds require multiple signatures and follow formal agreements, not individual agent control.
+
+### Agent vs. Core Vault Ownership
+
+- **Agents:** Hold and control their own underlying assets in wallets as part of collateral.
+- **Core Vault:** Holds pooled assets that no single agent owns; agents can request assets but cannot directly control the vault.
+  This improves capital efficiency and liquidity for the system.
+
+:::tip[What's next]
+
+Learn more about the different components and processes involved in FAssets - [collateral](/fassets/collateral), [minting](/fassets/minting), [redemptions](/fassets/redemption), [liquidations](/fassets/liquidation) and [Core Vault](/fassets/core-vault).
+
+For developer resources, see the [fassets-demo-dapp](https://github.com/flare-foundation/fassets-demo-dapp) source ([deployed instance](https://fassets-demo-dapp.vercel.app/)), our [developer guides](/fassets/developer-guides), or start with the [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-direct-minting), and [redemption](/fassets/developer-guides/fassets-redeem) guides.
+
+:::

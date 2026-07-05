@@ -1,0 +1,68 @@
+---
+slug: feeds
+title: Block-Latency Feeds
+description: FTSOv2's block-latency feeds update incrementally with each new block on Flare, approximately every 1.8 seconds.
+keywords:
+  [ftso, oracle, flare-time-series-oracle, flare-network, feeds, block-latency]
+---
+
+import FeedExplanation from "./_feed_explanation.mdx";
+import NewGithubIssue from "@site/src/components/NewGithubIssue";
+import TabItem from "@theme/TabItem";
+import Tabs from "@theme/Tabs";
+import CodeBlock from "@theme/CodeBlock";
+import FtsoFeeds from "@site/src/features/DataTables/FtsoFeeds";
+import CustomFeeds from "@site/src/features/DataTables/CustomFeeds";
+
+FTSOv2's block-latency feeds update incrementally with each new block on Flare, approximately every 1.8 seconds.
+Every feed leverages Flare's network of 100 independent data providers.
+These feeds primarily support cryptocurrency price data and are free to query on Flare, enabling decentralized applications to access up-to-date information without incurring additional costs.
+
+<FeedExplanation />
+
+:::warning
+
+- Feed IDs are **not** addresses.
+  They are `bytes21` structured encodings that combine the category and feed name to ensure each feed has a unique identifier.
+- **Do not** hardcode the number of decimals for a feed, as these can change.
+  You can either check the number of decimal places every query using [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid), or use the feed value in Wei using [`getFeedByIdInWei`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyidinwei).
+
+:::
+
+<FtsoFeeds showIndex />
+
+## Custom Feeds
+
+:::warning[Risk Profile]
+
+Each Custom Feed has a unique risk profile determined by its smart contract and data source, which users and developers must assess individually.
+
+:::
+
+Custom Feeds, introduced in [FIP.13](https://proposals.flare.network/FIP/FIP_13.html), extend the FTSO by enabling developers to create onchain feeds for arbitrary time-series data.
+Unlike standard FTSO feeds, which are secured by a decentralized network of data providers, Custom Feeds derive their values from logic defined in a developer-controlled smart contract.
+This expands the FTSO's capabilities beyond traditional price pairs, allowing for a wider variety of data to be brought onto the Flare network, such as prices for Liquid Staked Tokens (LSTs), data from specific offchain APIs, or other bespoke datasets.
+
+<CustomFeeds />
+
+:::tip[Create a new Custom Feed]
+
+Follow the [create a Custom Feed](/ftso/guides/create-custom-feed) guide to learn how a build a new Custom Feed.
+
+:::
+
+## Need more feeds?
+
+FTSOv2 can scale up to 1000 feeds.
+If you need additional FTSOv2 feeds beyond what is currently available, you can raise a New Feed Request Issue on GitHub.
+When a feed request is submitted, it is reviewed by the FTSO Management Group, which is comprised of the FTSO data providers as outlined in [FIP.08](https://proposals.flare.network/FIP/FIP_8.html#222-through-the-ftso-management-group).
+
+{/* prettier-ignore */}
+<NewGithubIssue issueType="feed_request">Request New Feed</NewGithubIssue>
+<br></br>
+
+:::tip[What's next?]
+
+[Build your first FTSOv2 app](/ftso/guides/build-first-app) using Foundry, or [read feeds offchain](/ftso/guides/read-feeds-offchain) in languages like JavaScript, Python, Rust, and Go.
+
+:::

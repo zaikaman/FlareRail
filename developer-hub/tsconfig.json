@@ -1,0 +1,17 @@
+{
+  "extends": "@docusaurus/tsconfig",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@site/*": ["./*"]
+    }
+  },
+  "include": ["src/**/*", "docusaurus.config.ts", "sidebars.ts"],
+  "exclude": [
+    "node_modules/**",
+    ".docusaurus/**",
+    "build/**",
+    "docgen/**",
+    "examples/developer-hub-javascript/**"
+  ]
+}

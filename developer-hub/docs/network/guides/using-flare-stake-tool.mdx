@@ -1,0 +1,714 @@
+---
+title: Using Flare Stake Tool
+tags: [intermediate, infrastructure]
+authors: [dineshpinto]
+description: Stake FLR using flare-stake-tool CLI.
+keywords: [intermediate, solidity, smart-contract, flare-network]
+sidebar_position: 9
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Staking works by locking funds for a period of time to support a specific network validator.
+The guide details out how to stake using the [flare-stake-tool](https://github.com/flare-foundation/flare-stake-tool) CLI.
+
+<details>
+<summary>Understand staking on Flare.</summary>
+
+When validator owners stake to their own nodes they **self-bond**, whereas all other participants are said to **delegate** their stake to that validator.
+Note that delegating your stake to a validator is different from FTSO delegation.
+
+Participants choose how much to stake and for how long their stake will be locked.
+The minimum values are:
+
+|                  | Self-bond | Delegation |
+| ---------------- | --------: | ---------: |
+| Minimum amount   |    1M FLR |    50K FLR |
+| Minimum duration |   60 days |    14 days |
+
+At the end of every reward epoch (i.e. 3.5 days on Flare Mainnet), participants are rewarded according to how well their chosen validator performed in that period.
+
+**Limits**
+
+The amount that you can stake and the rewards you can gain by staking are restricted by these limits:
+
+- **Delegation factor**: Limits the total amount that can be staked to a validator to its self-bond, which is the amount validators stake to their own nodes, times the delegation factor, which is 15.
+  For example, if a validator has a self-bond stake of 1M FLR, the total sum of all stakes, including delegations, cannot exceed 15M FLR.
+  This limit allows for 14M FLR of delegations.
+
+- **Staking cap**: Limits the reward performance of individual validators to **5% of the total staked amount**.
+  If you stake your funds on a validator with more than 5% of the total staked amount, you receive less FLR in reward.
+  To maximize your reward, delegate your staking funds to a validator with less than 5% of the total staked amount of FLR.
+
+- **Maximum number of validators**: You can stake to any number of validators, but rewards, FlareDrops, and governance vote power only apply for up to 3 different validators.
+
+Given that the Flare network uses two independent underlying chains, there is one extra step that must be considered.
+Funds must be transferred from the C-chain, where smart contracts run, to the P-chain, where staking happens.
+After the staking period expires and funds are unlocked, they can be transferred back to the C-chain.
+
+</details>
+
+## Prerequisites
+
+Install the following tools:
+
+- [Node.js 18 LTS or newer](https://nodejs.org/) (which includes [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/))
+
+## Setup
+
+1. Install the `flare-stake-tool` CLI:
+
+   ```bash
+   npm install @flarenetwork/flare-stake-tool -g
+   ```
+
+2. Verify installation:
+
+   ```bash
+   flare-stake-tool
+   ```
+
+   The tool's banner is displayed:
+
+   ```text
+   _____ _                  ____  _        _           ____ _     ___
+   |  ___| | __ _ _ __ ___  / ___|| |_ __ _| | _____   / ___| |   |_ _|
+   | |_  | |/ _` | '__/ _ \ \___ \| __/ _` | |/ / _ \ | |   | |    | |
+   |  _| | | (_| | | |  __/  ___) | || (_| |   <  __/ | |___| |___ | |
+   |_|   |_|\__,_|_|  \___| |____/ \__\__,_|_|\_\___|  \____|_____|___|
+
+   Version: 4.x
+   ```
+
+3. You can specify the account from which staking will take place in different ways - [using Ledger](#using-ledger-recommended) or [using a private key](#using-private-key).
+   The only recommended way is to use a Ledger device.
+
+### Using Ledger (recommended)
+
+1. Connect your Ledger device to your computer and unlock it.
+   Launch the [Ledger Wallet](https://shop.ledger.com/pages/ledger-wallet) (previously called Ledger Live) application and navigate to the **My Ledger** tab and ensure your device firmware is up-to-date.
+
+2. In the **App Catalog** tab, search for **Avalanche**, Click **Install**.
+
+   :::info[App Size]
+
+   The Avalanche app requires 138 KB of space on a **Ledger Nano S**.
+   You may need to remove other apps if space is insufficient.
+
+   :::
+
+3. Exit Ledger Wallet and ensure the device is not connected to any other applications like MetaMask.
+   Open the Avalanche app on your Ledger device.
+   The screen should display **Avalanche Ready**.
+
+4. Open a terminal and run the following command to start the staking tool in interactive mode:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+5. After the welcome banner, the tool prompts you to connect your wallet:
+
+   ```text
+   ? How do you want to connect your wallet? (Use arrow keys)
+   > Ledger
+   Public Key
+   Private Key (not recommended)
+   ```
+
+   Select **Ledger** using the arrow keys and press **Enter**.
+
+6. The next prompt asks you to choose the network:
+
+   ```text
+   ? Which network do you want to connect to? (Use arrow keys)
+   > Flare (Mainnet)
+   Coston2 (Testnet)
+   LocalHost (for development only)
+   ```
+
+   Select **Flare (Mainnet)** and press **Enter**.
+   A "Fetching Addresses..." message appears briefly.
+   Select **Ledger Live** on the address derivation screen.
+
+7. The tool will then display a list of addresses linked to your Ledger device, select the desired address and press **Enter**.
+   Ensure this address has a sufficient `FLR` balance for transaction fees and staking.
+   Funds can be transferred later if needed.
+
+   The main menu will now appear:
+
+   ```text
+   ? What do you want to do? (Use arrow keys)
+       View chain addresses
+   >   Check on-chain balance
+       Get network info
+       Get validator info
+       Move assets from C-chain to P-chain
+       Move assets from P-chain to C-chain
+       Add a validator node
+   ```
+
+   As an example, select **Check on-chain balance** and press **Enter**.
+   The tool displays the C-chain and P-chain balances before exiting.
+
+:::tip[Account Persistence]
+
+After completing the setup, a `ctx.json` file is created in the current folder.
+This file stores the selected account details, allowing you to skip the setup process on subsequent uses from the same folder.
+
+:::
+
+### Using private key
+
+:::danger[Using a private key file]
+
+Using a private key stored in a plain text file is **insecure** and should be avoided whenever possible.
+It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
+
+:::
+
+1. Create a text file (e.g. `/home/wallet/pvtKeyFile`) in a **secure folder** accessible only to you.
+
+2. Open the file and insert one of the following lines based on your private key format:
+
+   ```plaintext
+   PRIVATE_KEY_CB58="" // Use this if your key is in CB58 format, keep the quotes.
+   PRIVATE_KEY_HEX="" // Use this if your key contains 64 hexadecimal characters, keep the quotes.
+   ```
+
+3. Open a terminal and run the following command to start the staking tool in interactive mode:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+4. After the welcome banner, the tool prompts you to connect your wallet:
+
+   ```plaintext
+   ? How do you want to connect your wallet? (Use arrow keys)
+       Ledger
+       Public Key
+   >   Private Key (not recommended)
+   ```
+
+   Select **Private Key** using the arrow keys and press **Enter**.
+
+5. You'll see a security warning, enter the full file path where your private key file is stored and press **Enter**.
+
+   ```text
+   Warning: You are connecting using your private key which is not recommended
+   ? Enter Path to Private Key file (E.g. /home/wallet/pvtKeyFile):
+   ```
+
+6. The next prompt asks you to choose the network:
+
+   ```plaintext
+   ? Which network do you want to connect to? (Use arrow keys)
+   > Flare (Mainnet)
+   Coston2 (Testnet)
+   LocalHost (for development only)
+   ```
+
+   Select **Flare (Mainnet)** and press **Enter**.
+
+7. The main menu will now appear:
+   ```text
+   ? What do you want to do? (Use arrow keys)
+       View chain addresses
+   >   Check on-chain balance
+       Get network info
+       Get validator info
+       Move assets from C-chain to P-chain
+       Move assets from P-chain to C-chain
+       Add a validator node
+   ```
+   As an example, select **Check on-chain balance** and press **Enter**.
+   The tool displays the C-chain and P-chain balances before exiting.
+
+### Check validator info
+
+1. Note down the `NodeID` of the validator you want to stake to:
+   - If you created the validator, retrieve its `NodeID`, `publicKey` and `proofOfPossession` by running:
+
+     ```bash
+     curl \
+      --location 'http://localhost:9650/ext/info' \
+      --header 'Content-Type: application/json' \
+      --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }'
+     ```
+
+   - If you want to stake to somebody else's validator, get a JSON list of all validators by running:
+
+     ```bash
+     flare-stake-tool info validators
+     ```
+
+2. Note down the desired staking **start time** and **end time**: When staking to an existing validator, both these times must be inside the period when the validator is active.
+   If you specify a period when the validator is inactive, your transaction on the P-chain reverts.
+
+## Move funds to P-chain
+
+1. Check your C-chain and P-chain balances by selecting the **Check on-chain balance** option when executing:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+   Your currently available funds on the C-chain and P-chain are shown in the last lines.
+   Funds currently staked are locked and are not reflected in the P-chain balance.
+   They will become automatically available when the staking period expires.
+
+   ```plaintext
+   ? How do you want to connect your wallet? Ledger
+   You already have an existing Ctx file with the following parameters -
+   Public Key: ●●●●●●●●●●●●●●●●
+   Network: flare
+   Eth Address: 0x●●●●●●●●
+   ? Do you wish to continue with this? yes
+   ? What do you want to do? Check on-chain balance
+   Using network: flare
+   Balances on the network "flare"
+   // highlight-next-line
+   C-chain 0x●●●●●●●●: 100000.0 FLR
+   // highlight-next-line
+   P-chain P-flare●●●●●●●●: 50000.0 FLR
+   ```
+
+   If you already have funds on the P-chain, skip the next step.
+
+2. Select the **Move assets from C-chain to P-chain** option when executing:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+   You are asked the amount of FLR you want to transfer:
+
+   ```plaintext
+   ? What do you want to do? Move assets from C-chain to P-chain
+   ? Enter amount (in FLR): 50000
+   ? Enter fees (in FLR): (1)
+   ```
+
+   :::warning[Transaction Fees]
+
+   When transferring from the C-chain to the P-chain, transaction fees are wholly paid from the C-chain.
+   Make sure you leave enough funds on the C-chain after the transfer, or it will fail.
+
+   :::
+
+3. Transfers between chains are made of two operations: an **export** from the C-chain followed by an **import** to the P-chain.
+   Therefore, you are asked to confirm two transactions.
+
+   ```plaintext
+   // highlight-next-line
+   Please approve export transaction
+   Using network: flare
+   Fetching account from ledger...
+   Creating export transaction...
+   Transaction finalized!
+   // highlight-next-line
+   Please approve import transaction
+   Using network: flare
+   Fetching account from ledger...
+   Creating import transaction...
+   ```
+
+If you encounter any issues during this process, refer to the [Troubleshooting](#troubleshooting) section.
+
+## Stake
+
+1. After you have funds on the P-chain, execute the following command and select the appropriate option:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+   - If you are going to delegate to your own node (self-bonding), select **Add a validator node**.
+
+   - If you are going to stake to another node (delegation), select **Delegate to a validator node** (You may need to scroll down to see this option).
+
+2. You then need to provide the following information:
+   - **amount**: Amount must be provided in FLR units.
+   - **NodeID** and **end time**: Use the values noted down from the [setup](#setup).
+
+   If you are adding a validator node, you also need to provide the proof of possession **BLS public key** and **BLS signature**.
+
+   Retrieve these details using the following command:
+
+   ```bash
+   curl -X POST --data '{
+    "jsonrpc":"2.0",
+    "id"     :1,
+    "method" :"info.getNodeID"
+   }' -H 'content-type:application/json;' 127.0.0.1:9650/ext/info | jq
+   ```
+
+   The output will be similar to the following:
+
+   ```json
+   {
+      "jsonrpc": "2.0",
+      "result": {
+         "nodeID": "NodeID-CGeHNYkQJX4qb21x976PEcNt3FqsUZfXL",
+         "nodePOP": {
+            popBLSPublicKey ---> "publicKey": "0xb6a40b905128c010e4d7b0cbd6f7b7912a1da9a6022a8c720887b5183a4f2f109c678027316ae4757f7f987f1fa5addb",
+            popBLSSignature ---> "proofOfPossession": "0xb9394ef2992a77a3b70440c2fdb3b2a53f23fb8579460322b69a290bf3de7fafc2665b155b5300c08a1e7bcb45bb7eaf0ca7f596650b0423f61f329744e37f6908c1d7e4191378d5f0ff7fd7f8abd02d37a2be9dd95635a0b1f744b043cb5d9e"
+         }
+      },
+      "id": 1
+   }
+   ```
+
+3. If you selected **Add a validator node**, you have to set the **delegation fee**.
+   This is the percentage of all rewards that the node owner keeps.
+   The rest is split proportionally between the self-bond and all delegators that contributed stake.
+   10 means 10%, so the maximum value is 100.
+
+   ```plaintext
+   ? What do you want to do? Add a validator node
+   ? Enter amount (in FLR): 50000
+   ? Enter Node NodeId (E.g. NodeID-FQKTLuZHEsjCxPeFTFgsojsucmdyNDsz1): NodeID-●●●●●●●●
+   ? Enter end time(E.g. 1693185095): ●●●●●●●●
+   ? Enter delegation fee(E.g. 10): 10
+   ? Please enter the popBLSPublicKey: 0x●●●●●●●●
+   ? Please enter the popBLSSignature: 0x●●●●●●●●
+   ```
+
+4. You are then asked to confirm the staking transaction on your hardware wallet.
+
+   ```plaintext
+   Using network: flare
+   Fetching account from ledger...
+   Creating export transaction...
+   // highlight-next-line
+   Please review and sign the transaction on your ledger device...
+   Sending transaction to the node...
+   Transaction with id ●●●●●●●● sent to the node
+   Finished execution
+   ```
+
+   Your stake is now locked and will start accruing rewards after the configured start time arrives.
+   When the end time arrives, the funds will be automatically unlocked.
+
+If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
+
+## Check Stake
+
+1. You can now double-check that the operation has been properly registered by looking at the current list of validators:
+
+   ```bash
+   flare-stake-tool info validators > validators.txt
+   ```
+
+   This creates a file called `validators.txt`.
+   Open it and search for the line containing the **P-chain address** of your account.
+   If you don't remember your address run:
+
+   ```bash
+   flare-stake-tool info addresses
+   ```
+
+2. If your account has stake on any node, you will find a section similar to:
+
+   ```json
+   {
+     "txID": "28Yf5yQ3xt9yaMvfZ1RP5jkCkT4y2pfD86UheZUHFVng2tFcWd",
+     "startTime": "1688569201",
+     "endTime": "1696345201",
+     "stakeAmount": "16750000000000000",
+     "nodeID": "NodeID-C6i8mruq11VdxGQ7tiUBgrRqoLBot86df",
+     "rewardOwner": {
+       "locktime": "0",
+       "threshold": "1",
+       "addresses": [
+         // highlight-next-line
+         "P-flare19c8zfml39x6efnw5j90nl85dmwdqhluwhrxz9g"
+       ]
+     }
+   }
+   ```
+
+   Check that the `stakeAmount` (in wei), `nodeID`, `startTime`, and `endTime` match the values you configured.
+   If you have multiple active stakes, your address will show up multiple times.
+
+## Move funds back to C-chain
+
+1. Finally, you also have the option to move your P-chain funds back to the C-chain where they can participate in the wider ecosystem.
+   You can only transfer P-chain funds that are not currently locked in any stake.
+   Select the **Move assets from P-chain to C-chain** option when executing:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+2. You are asked the amount of FLR you want to transfer:
+
+   ```plaintext
+   ? What do you want to do? Move assets from P-chain to C-chain
+   ? Enter amount (in FLR): 50000
+   ```
+
+   :::warning[Transaction Fees]
+
+   When transferring from the P to the C-chain, transaction fees are paid from BOTH chains.
+   Make sure you leave enough funds on both chains after the transfer, or it will fail.
+
+   :::
+
+3. Again, the transfer between the two chains require you to confirm two transactions.
+
+   ```plaintext
+   // highlight-next-line
+   Please approve export transaction
+   Using network: flare
+   Fetching account from ledger...
+   Creating export transaction...
+   ? Enter fees (in FLR): (1)
+   // highlight-next-line
+   Please approve import transaction
+   Using network: flare
+   Fetching account from ledger...
+   Creating import transaction...
+   Finished execution
+   ```
+
+If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
+
+## Claiming staking rewards
+
+At the end of every reward epoch, participants are rewarded according to how well their chosen validator performed in that period, but these rewards are not claimable yet.
+Every 4 reward epochs, rewards are accumulated in a dedicated smart contract and can then be claimed from the Flare Stake CLI tool:
+
+1. Select the **Claim staking rewards** option when executing:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+   You are shown the amount of pending rewards (in wei) and are asked how much you want to claim (in FLR):
+
+   ```plaintext
+   ? What do you want to do? Claim staking rewards
+   State of rewards for 0x●●●●●●●●:
+   Total rewards: 2000.0 FLR
+   Claimed rewards: 1010.0 FLR
+   Unclaimed rewards: 990.0 FLR
+   ```
+
+2. Claim all or a portion of the rewards and optionally choose to wrap them or not:
+
+   <Tabs groupId="claim" block>
+
+   <TabItem value="all" label="Claim All" default>
+
+   ```plaintext
+   ? Do you want to claim all unclaimed rewards? (total unclaimed: 990.0 FLR) Yes
+   ? Should claimed rewards be wrapped? Yes
+   ```
+
+   </TabItem>
+
+   <TabItem value="partial" label="Claim Partial">
+
+   ```plaintext
+   ? Do you want to claim all unclaimed rewards? (total unclaimed: 990.0 FLR) No
+   ? Please enter the amount to claim: 100
+   ? Should claimed rewards be wrapped? Yes
+   ```
+
+   </TabItem>
+
+   </Tabs>
+
+3. Decide the recipient address for the rewards - defaults to the address you used to connect to the Flare Stake Tool.
+
+   ```plaintext
+   ? Please enter the recipient address (default address is reward owner): 0x●●●●●●●●
+   ```
+
+   You are then asked to confirm the staking transaction on your hardware wallet.
+
+   ```plaintext
+   Using network: flare
+   Creating claim transaction...
+   Signing transaction...
+   // highlight-next-line
+   Transaction with hash 0x●●●●●●●● built and sent to the network
+   ```
+
+## Transfer P-chain funds to another P-chain address
+
+1. You can transfer P-chain funds to another P-chain address by selecting the **Transfer funds to another P-chain address** option:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+   ```plaintext
+   ? What do you want to do?
+   ❯ Transfer funds to another P-chain address
+   Claim staking rewards
+   Quit
+   ```
+
+2. Select the amount to transfer and the destination P-chain address:
+
+   ```plaintext
+   ? Enter amount (in FLR): 100
+   ? Please enter the destination P-chain address: P-flare●●●●●●●●
+   Using network: flare
+   Fetching account from ledger...
+   Creating transfer transaction...
+   ```
+
+## Troubleshooting
+
+<details>
+T1.
+Cannot connect to Ledger device, no Device, cannot retrieve addresses, or similar.
+
+Make sure:
+
+- The device is connected, the Avalanche app is opened, and it shows the "Avalanche Ready" message.
+- No other application like Ledger Wallet or MetaMask is connected to the device.
+- The device is not in stand-by mode.
+- You are not running on Windows from a Linux terminal (WSL).
+  Use a native Windows console instead.
+
+</details>
+
+<details>
+T2.
+Insufficient funds.
+
+Make sure enough funds will remain after a transaction to pay for the transaction fees.
+If too much time has elapsed between the transaction's creation and its confirmation on the Ledger, the calculated fee might be incorrect.
+Try the operation again.
+The network might be congested and the calculated fees might not be high enough.
+Try the operation again after a while.
+
+</details>
+
+<details>
+T3.
+Import transaction failed and the funds have vanished.
+
+Transfer operations require [an export and an import transaction](#move-funds-to-p-chain).
+If the export succeeds, but then the import fails, it looks like the funds have disappeared from both chains, but they are still retrievable.
+
+Import the funds using the interactive tool:
+
+- If you are moving funds from the C-chain to the P-chain:
+
+  ```bash
+  flare-stake-tool interactive
+  ```
+
+  ```plaintext
+  ? What do you want to do?
+    ❯ Import Funds (in case export fails for either P chain or C chain)
+  ```
+
+  ```plaintext
+  ? Please select the destination chain to which you want to import your funds? (Use arrow keys)
+    ❯ P
+  ```
+
+- If you are moving funds from the P-chain to the C-chain:
+
+  ```bash
+  flare-stake-tool interactive
+  ```
+
+  ```plaintext
+  ? What do you want to do?
+    ❯ Import Funds (in case export fails for either P chain or C chain)
+  ```
+
+  ```plaintext
+  ? Please select the destination chain to which you want to import your funds? (Use arrow keys)
+    ❯ C
+  ```
+
+</details>
+
+<details>
+T4.
+Unsupported digital routine.
+
+If you get the following error message:
+
+```text
+E: Error: error:0308010C:digital envelope routines::unsupported
+```
+
+Make sure you are using the correct Node.js version, as advised in the [Prerequisites section](#prerequisites).
+
+You can find out the version of Node.js you are running with the following command:
+
+```bash
+node --version
+```
+
+</details>
+
+## FAQs
+
+<details>
+F1.
+How do I register my address manually?
+
+You can register your address manually using the block explorer and the `AddressBinder` smart contract.
+
+1. Retrieve the public key that generated the accounts you want to use.
+   From a terminal, run:
+
+   ```bash
+   flare-stake-tool info addresses
+   ```
+
+   Copy the hexadecimal string starting with `0x` in the last line.
+
+   ```plaintext
+   Using network: flare
+   Addresses on the network "flare"
+   P-chain address: P-flare●●●●●●●●
+   C-chain address hex: 0x●●●●●●●●
+   // highlight-next-line
+   secp256k1 public key: 0x●●●●●●●●●●●●●●●●
+   ```
+
+2. Retrieve the `AddressBinder` contract address from the [`FlareContractRegistry`](/network/solidity-reference).
+3. Enter the address of the `AddressBinder` contract in the block explorer, and go to the **Write Contract** tab.
+4. Click on **Connect Wallet**.
+   You do not need to use the same account as the one you are binding.
+5. Locate the `registerPublicKey` method and paste the public key from step 1 into the `_publicKey` field.
+6. Click on **Write** and confirm the transaction from your wallet.
+
+If the transaction is successful, your account's P-chain and C-chain addresses are now bound.
+
+</details>
+
+<details>
+F2.
+How do I claim rewards manually?
+
+You can claim rewards manually using the block explorer and the `ValidatorRewardManager` smart contract.
+
+1. Retrieve the `ValidatorRewardManager` contract address from the [`FlareContractRegistry`](/network/solidity-reference).
+2. Enter the address of the `ValidatorRewardManager` contract in the block explorer, and go to the **Write Contract** tab.
+3. Click on **Connect Wallet**.
+   You need to connect the account for which you are claiming.
+4. Locate the `claim` method and enter the following information:
+   - `_rewardOwner`: C-chain address that accrued the rewards.
+   - `_recipient`: Address where the rewards must be sent.
+   - `_rewardAmount`: Amount to claim.
+     Find the pending amount using the `getStateOfRewards` method in the **Read Contract** tab.
+   - `_wrap`: Whether the rewards should be also wrapped, as a convenience.
+5. Click on **Write** and confirm the transaction from your wallet.
+
+If the transaction is successful, the reward is transferred to the specified recipient.
+
+</details>

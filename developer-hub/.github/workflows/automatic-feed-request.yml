@@ -1,0 +1,51 @@
+name: Automatic Feed Request
+
+on:
+  schedule:
+    # US market open (Daylight Saving Time)
+    - cron: "40 13 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  check_and_report:
+    name: Run automatic feed request
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: ./automations
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync
+      - name: Check for new feeds
+        id: feed
+        run: |
+          set +e
+          uv run check_new_feed.py
+          status=$?
+          if [ "$status" -eq 78 ]; then
+            echo "No update needed (exit code 78)."
+            echo "should_create_issue=false" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ "$status" -eq 0 ]; then
+            echo "should_create_issue=true" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "Script failed with exit code $status"
+            exit $status
+          fi
+      - name: Create issue
+        uses: JasonEtco/create-an-issue@v2
+        if: steps.feed.outputs.should_create_issue == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: automations/issues.md

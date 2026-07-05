@@ -1,0 +1,244 @@
+---
+slug: hardhat-foundry-starter-kit
+title: Hardhat and Foundry Starter Kit
+sidebar_label: Hardhat & Foundry Starter Kit
+tags: [quickstart, hardhat, foundry, solidity]
+authors: [filipkoprivec]
+description: Integrate Flare into Hardhat and Foundry.
+keywords:
+  [hardhat, foundry, quickstart, solidity, smart-contract, flare-network]
+sidebar_position: 1
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+The starter kit includes a basic setup for configuring Hardhat and Foundry, along with examples on how to compile, test and deploy smart contracts on Flare.
+
+## Prerequisites
+
+<Tabs groupId="framework">
+  <TabItem value="hardhat" label="Hardhat" default>
+
+    If you're new to Hardhat, review Hardhat's documentation on [Getting Started with Hardhat](https://hardhat.org/hardhat-runner/docs/getting-started#overview).
+
+    Install the following tools:
+
+    - [Node.js](https://nodejs.org/en) v18.0 or higher
+    - [npm](https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager) or [yarn](https://yarnpkg.com)
+
+    :::tip
+
+    [Hardhat for Visual Studio Code](https://hardhat.org/hardhat-vscode) is the official Hardhat extension that adds advanced support for Solidity to VSCode.
+
+If you use VSCode, give it a try!
+
+    :::
+
+  </TabItem>
+  <TabItem value="foundry" label="Foundry">
+
+    If you're new to Foundry, review Foundry's documentation on [Getting Started with Foundry](https://book.getfoundry.sh).
+
+    Install the following tools:
+
+    - [Foundry](https://getfoundry.sh/)
+
+  </TabItem>
+</Tabs>
+
+## Clone the template
+
+<Tabs groupId="framework">
+  <TabItem value="hardhat" label="Hardhat">
+
+    1. Clone the [flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter) and navigate into the project directory.
+
+        ```bash
+        git clone https://github.com/flare-foundation/flare-hardhat-starter.git
+        cd flare-hardhat-starter
+        ```
+
+    2. Install the project dependencies.
+
+        ```bash
+        yarn
+        ```
+
+        or alternatively:
+
+        ```bash
+        npm install --force
+        ```
+
+    3. Copy the example environment file and update it with your settings.
+
+        ```bash
+        cp .env.example .env
+        ```
+
+    4. Open the `.env` file and set your `PRIVATE_KEY`.
+
+        ```text
+        PRIVATE_KEY=your_private_key_here
+        ```
+
+        :::danger
+
+        - Never share your private keys.
+        - Never put your private keys in source code.
+        - Never commit private keys to a Git repository.
+
+        :::
+
+  </TabItem>
+  <TabItem value="foundry" label="Foundry">
+
+    1. Clone the [flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory.
+
+        ```bash
+        git clone https://github.com/flare-foundation/flare-foundry-starter.git
+        cd flare-foundry-starter
+        ```
+
+    2. Install the project dependencies.
+
+        ```bash
+        make install
+        ```
+
+        The `make install` target runs `forge soldeer install` and additionally fetches the npm-only dependencies (`ftso-adapters`, `pyth-sdk-solidity`, `lz-address-book`) used by the starter's adapter and OFT examples.
+
+    3. The starter ships with a `remappings.txt` ready for the current periphery release.
+
+For reference, it contains:
+
+        ```text title="remappings.txt"
+        @openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
+        flare-periphery/=dependencies/flare-periphery-0.1.37/
+        @flarenetwork/flare-periphery-contracts/=dependencies/flare-periphery-0.1.37/src/
+        forge-std/=dependencies/forge-std-1.9.5/src/
+        surl/=dependencies/surl-0.0.0/src/
+        surl/=dependencies/surl-0.0.0/
+        lz-address-book/=dependencies/lz-address-book/src/
+        @layerzerolabs/lz-evm-protocol-v2/=dependencies/lz-address-book/lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/
+        @layerzerolabs/lz-evm-messagelib-v2/=dependencies/lz-address-book/lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/
+        @layerzerolabs/oft-evm/=dependencies/lz-address-book/lib/devtools/packages/oft-evm/
+        @layerzerolabs/oapp-evm/=dependencies/lz-address-book/lib/devtools/packages/oapp-evm/
+        solidity-bytes-utils/=dependencies/lz-address-book/lib/solidity-bytes-utils/
+        solady/=dependencies/solady-0.1.26/
+        ftso-adapters/=dependencies/ftso-adapters-0.0.1/
+        @pythnetwork/pyth-sdk-solidity/=dependencies/pyth-sdk-solidity-2.2.0/
+        ```
+
+    4. Copy `.env.example` to `.env` and update it with your settings.
+
+        Add `PRIVATE_KEY` to your environment variables.
+
+        ```text
+        PRIVATE_KEY=your_private_key_here
+        ```
+
+        :::danger
+
+        - Never share your private keys.
+        - Never put your private keys in source code.
+        - Never commit private keys to a Git repository.
+
+        :::
+
+    5. You now need to add the information from the `.env` file to your bash profile:
+
+        ```bash
+        source .env
+        ```
+
+        You need to do this every time you open a new terminal or change the `.env` file.
+
+  </TabItem>
+</Tabs>
+
+## Compile, test and deploy
+
+<Tabs groupId="framework">
+  <TabItem value="hardhat" label="Hardhat">
+
+    1. Compile the smart contracts to generate the necessary artifacts.
+
+        ```bash
+        yarn hardhat compile
+        ```
+
+        or alternatively:
+
+        ```bash
+        yarn hardhat compile
+        ```
+
+        This command compiles all `.sol` files in the `/contracts` folder and generates artifacts needed for testing.
+
+    2. Run the provided test suite to ensure everything is set up correctly.
+
+        ```bash
+        yarn hardhat test
+        ```
+
+        or alternatively:
+
+        ```bash
+        yarn hardhat test
+        ```
+
+    3. Review and modify `hardhat.config.ts` to specify the networks you want to deploy to.
+
+The details for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network and Songbird Testnet Coston are already included.
+
+    Optionally you can add the API keys for [Flare Explorer](https://flare-explorer.flare.network) in the `.env` file.
+
+        ```bash
+        yarn hardhat run scripts/tryDeployment.ts
+        ```
+
+        or alternatively:
+
+        ```bash
+        yarn hardhat run scripts/tryDeployment.ts --network coston2
+        ```
+
+    Congratulations!
+
+You have successfully integrated Flare into Hardhat.
+
+  </TabItem>
+  <TabItem value="foundry" label="Foundry">
+
+    1. Compile the smart contracts to generate the necessary artifacts.
+
+        ```bash
+        forge build
+        ```
+
+        This command compiles all `.sol` files in the `/src` folder and generates artifacts needed for testing.
+
+    2. Run the provided test suite to ensure everything is set up correctly.
+
+        ```bash
+        forge test
+        ```
+
+    3. Run the deployment script using Foundry:
+
+        ```bash
+        forge script script/HelloWorld.s.sol --broadcast --private-key $PRIVATE_KEY --rpc-url <RPC_URL>
+        ```
+
+        Replace `<RPC_URL>` with the RPC endpoint of the network you are deploying to.
+
+A list of RPC endpoints for Flare networks can be found in Flare's [Network Configuration](/network/overview#configuration).
+
+    Congratulations!
+
+You have successfully integrated Flare into Foundry.
+
+  </TabItem>
+</Tabs>

@@ -1,0 +1,681 @@
+---
+sidebar_position: 2
+slug: custom-instruction-ts
+title: Custom Instruction
+authors: [nikerzetic]
+description: Sending custom smart account instructions via XRPL using Viem and an off-chain executor.
+tags: [quickstart, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import CustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions.ts";
+
+The [Custom Instruction overview](/smart-accounts/custom-instruction) introduces the `0xFE` memo opcode, which keeps the XRPL memo at a fixed 42 bytes by carrying only `keccak256(PackedUserOperation)` and delivers the user operation bytes to Flare through an off-chain executor.
+This guide walks through a TypeScript script that drives all three steps of the protocol with Viem and the [Flare Data Connector (FDC)](/fdc/overview).
+
+A prerequisite for the user operation to be executed is that the personal account holds enough native tokens to cover the call values.
+The script forwards a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
+The [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts#personal-account-of-an-xrpl-address) shows how to derive the personal account address.
+
+The XRPL wallet that signs the `Payment` also needs enough XRP to cover the payment amount (net mint plus fees, computed below).
+Before sending, the script reads the wallet's XRP balance with the `getXrpBalance` helper and aborts if it is below the required amount.
+
+The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/custom-instructions.ts).
+
+## Contracts
+
+The script executes three calls on three example smart contracts already deployed on Coston2.
+None of them is useful on its own; together they exercise the three things a custom instruction can do (call with no value, call with native value, call with a string argument and native value).
+
+The first contract is a `Checkpoint` that counts how many times each user has called its `passCheckpoint` function.
+The first call of our user operation will be to call the `passCheckpoint` function of this contract, deployed at the address [`0xEE6D54382aA623f4D16e856193f5f8384E487002`](https://coston2-explorer.flare.network/address/0xEE6D54382aA623f4D16e856193f5f8384E487002?tab=contract).
+
+```Solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+contract Checkpoint {
+    mapping(address => uint256) public numberOfPasses;
+
+    function passCheckpoint() public payable {
+        ++numberOfPasses[msg.sender];
+    }
+}
+```
+
+The second contract is a `PiggyBank`, and is a degree more useful.
+It allows a user to `deposit` FLR into it, and `withdraw` it all at once.
+Our second call will be to deposit `1` FLR into the `PiggyBank` contract at the address [`0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42`](https://coston2-explorer.flare.network/address/0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42?tab=contract).
+
+```Solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+contract PiggyBank {
+    mapping(address => uint256) public balances;
+
+    function deposit() public payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw() public {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0);
+        delete balances[msg.sender];
+        (bool success, ) = payable(msg.sender).call{ value: amount }("");
+        require(success);
+    }
+}
+```
+
+The third and last contract is a `NoticeBoard`.
+It allows users to `pinNotice`.
+The value they send in this transaction will determine how long the notice stays up.
+As the contract is set up, `1` FLR gets you `30` days, with fractions allowed.
+The last call our personal account will perform is to pin a notice with the message `Hello World!` to the `NoticeBoard` at the address [`0x59D57652BF4F6d97a6e555800b3920Bd775661Dc`](https://coston2-explorer.flare.network/address/0x59D57652BF4F6d97a6e555800b3920Bd775661Dc?tab=contract) for `30` days (which means we attach a value of `1` FLR).
+
+```Solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+struct Notice {
+    uint256 expirationTimestamp;
+    string message;
+}
+
+contract NoticeBoard {
+    uint256 public constant THIRTY_DAYS = 2592000;
+
+    mapping(address => Notice) public notices;
+    mapping(address => bool) public existingClients;
+    address[] public clients;
+
+    function pinNotice(string memory message) public payable {
+        require(msg.value > 0);
+
+        uint256 duration = THIRTY_DAYS * (msg.value / 1 ether);
+        uint256 expirationTimestamp = block.timestamp + duration;
+
+        notices[msg.sender] = Notice(expirationTimestamp, message);
+        if (!existingClients[msg.sender]) {
+            clients.push(msg.sender);
+            existingClients[msg.sender] = true;
+        }
+    }
+
+    function getNotices() public view returns (Notice[] memory) {
+        Notice[] memory _notices = new Notice[](clients.length);
+        for (uint256 i = 0; i < clients.length; ++i) {
+            Notice memory notice = notices[clients[i]];
+            if (notice.expirationTimestamp > block.timestamp) {
+                _notices[i] = notice;
+            }
+        }
+        return _notices;
+    }
+}
+```
+
+The contract also performs additional checks to ensure each client is only added to the array once, and that `getNotices` returns only notices that have not yet expired.
+
+## Two Actors, Three Steps
+
+The `0xFE` flow is a three-step procedure that maps to two independent actors on mainnet.
+This script runs all three steps from a single process for demo purposes, but the on-chain checks are designed around the split:
+
+| Step | Actor    | Action                                                                                                                                                                 |
+| ---- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | User     | Encode the `PackedUserOperation` as `userOp`, commit `keccak256(userOp)` in the 42-byte XRPL memo, send the XRPL `Payment` and send the `userOp` data to the Executor. |
+| 2    | Executor | Fetch an FDC `XRPPayment` proof and call `AssetManagerFXRP.executeDirectMintingWithData(proof, userOp)`.                                                               |
+| 3    | Both     | The `MasterAccountController` executes the user operation inside the executor's transaction and emits `UserOperationExecuted`.                                         |
+
+On mainnet, the user delivers the `PackedUserOperation` bytes to the executor **off-chain** (e.g. over an authenticated HTTP API); they never go onto the XRPL ledger.
+
+:::info Executor role in this script
+For demo purposes this script plays **both** roles itself: the same process encodes the user operation, sends the XRPL `Payment`, then fetches the FDC proof and submits `executeDirectMintingWithData`.
+In production, Step 2 will be run by an executor service - initially a service operated by Flare - and the user will only hand it `(xrplTransactionHash, data, totalCallValue)` over an authenticated channel.
+The on-chain checks (XRPL signature, `proofOwner` binding, `keccak256(data)` commitment) are what make the split safe: the executor cannot substitute different bytes or run the user operation against a payment that was not theirs to deliver.
+:::
+
+## Building the Call Array
+
+Each entry in the user operation is a [`Call`](/smart-accounts/reference/IPersonalAccount#call) struct with three fields:
+
+- `target` - the address of the Flare contract to invoke.
+  The personal account dispatches the call with itself as `msg.sender`, so this is the contract that ultimately runs the call.
+- `value` - the amount of the native token (FLR on mainnet, C2FLR on Coston2) in wei to attach to the call.
+  The sum of `value` across all calls is what the executor must attach as `msg.value` on `executeDirectMintingWithData` in Step 2; that value flows `AssetManagerFXRP -> MasterAccountController -> PersonalAccount.executeUserOp` and is split back across the inner calls.
+- `data` - the ABI-encoded calldata (4-byte function selector followed by ABI-encoded arguments) the personal account passes to `target`.
+  Use Viem's [`encodeFunctionData`](https://viem.sh/docs/contract/encodeFunctionData) to build it from the contract ABI, function name, and arguments.
+
+```typescript
+export type Call = {
+  target: Address;
+  value: bigint;
+  data: `0x${string}`;
+};
+```
+
+Because the `0xFE` memo is independent of batch size, the script issues a single batch for all three calls - the same three that overflow the XRPL memo cap in the [memo field flow](/smart-accounts/guides/typescript-viem/memo-field-custom-instruction-ts):
+
+```typescript
+const customInstruction: Call[] = [
+  {
+    target: checkpointAddress,
+    value: BigInt(0),
+    data: encodeFunctionData({
+      abi: checkpointAbi,
+      functionName: "passCheckpoint",
+      args: [],
+    }),
+  },
+  {
+    target: piggyBankAddress,
+    value: BigInt(depositAmount),
+    data: encodeFunctionData({
+      abi: piggyBankAbi,
+      functionName: "deposit",
+      args: [],
+    }),
+  },
+  {
+    target: noticeBoardAddress,
+    value: BigInt(pinNoticeAmount),
+    data: encodeFunctionData({
+      abi: noticeBoardAbi,
+      functionName: "pinNotice",
+      args: [pinNoticeMessage],
+    }),
+  },
+];
+```
+
+## Personal account and nonce
+
+The personal account address is deterministic, so we can fetch it before the account is even deployed by calling [`getPersonalAccount`](/smart-accounts/reference/IMasterAccountController#getpersonalaccount) on the [`MasterAccountController`](/smart-accounts/reference/IMasterAccountController).
+Before encoding the user operation, we also need the current nonce from [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
+Each successful execution increments it, so passing an invalid value reverts to [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce).
+
+```typescript
+export async function getNonce(personalAccount: Address): Promise<bigint> {
+  return publicClient.readContract({
+    address: await getMasterAccountControllerAddress(),
+    abi: iMemoInstructionsFacetAbi,
+    functionName: "getNonce",
+    args: [personalAccount],
+  }) as Promise<bigint>;
+}
+```
+
+## Encoding the Hash Memo
+
+The XRPL memo is a fixed 42 bytes: 10-byte header followed by the 32-byte hash of the ABI-encoded `PackedUserOperation`.
+The ABI-encoded user operation bytes are returned alongside the memo so they can be handed to the executor:
+
+```typescript
+export function encodeHashInstructionMemo({
+  customInstruction,
+  walletId,
+  executorFeeUBA,
+  sender,
+  nonce,
+}: {
+  customInstruction: Call[];
+  walletId: number;
+  executorFeeUBA: bigint;
+  sender: Address;
+  nonce: bigint;
+}): { memoData: `0x${string}`; data: `0x${string}` } {
+  const data = encodePackedUserOpData({ customInstruction, sender, nonce });
+  const memoData = new UserOpCustomInstruction({
+    walletId,
+    executorFeeUBA,
+    userOperationHash: keccak256(data),
+  }).encode();
+  return { memoData, data };
+}
+```
+
+The `encodePackedUserOpData` helper ABI-encodes a `PackedUserOperation` whose only meaningful fields are `sender`, `nonce`, and `callData` - the others are not validated on-chain.
+The `UserOpCustomInstruction` class from [`@flarenetwork/smart-accounts-encoder`](https://www.npmjs.com/package/@flarenetwork/smart-accounts-encoder) owns the byte layout: it packs the `0xFE` opcode, the one-byte `walletId`, and the 8-byte big-endian `executorFeeUBA` into the 10-byte header, then appends the 32-byte `userOperationHash`, and `.encode()` returns the full 42-byte memo.
+
+## Computing the XRPL Payment Amount
+
+A custom instruction rides on top of an FAssets direct minting payment, so the XRPL transfer must cover the net mint amount plus the minting fee and the executor fee, as read from the `AssetManagerFXRP` contract.
+For a memo-only transaction (no FXRP mint), the net amount is `0`, but the fees still apply.
+
+```typescript
+export async function computeDirectMintingPaymentAmountXrp({
+  netMintAmountXrp,
+}: {
+  netMintAmountXrp: number;
+}): Promise<number> {
+  const assetManagerAddress =
+    await getContractAddressByName("AssetManagerFXRP");
+  const [executorFeeUBA, feeBIPS, minimumFeeUBA] = await Promise.all([
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingExecutorFeeUBA",
+    }),
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingFeeBIPS",
+    }),
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingMinimumFeeUBA",
+    }),
+  ]);
+
+  const netMintUBA = BigInt(xrpToDrops(netMintAmountXrp));
+  const proportionalFeeUBA = (netMintUBA * feeBIPS) / 10_000n;
+  const mintingFeeUBA =
+    proportionalFeeUBA > minimumFeeUBA ? proportionalFeeUBA : minimumFeeUBA;
+  const totalUBA = netMintUBA + mintingFeeUBA + executorFeeUBA;
+
+  return Number(dropsToXrp(totalUBA.toString()));
+}
+```
+
+The script also mints `10` FXRP as a side effect of the same payment, so the payment amount includes the net mint amount on top of the fees.
+
+## Checking the XRPL Wallet Balance
+
+The signer of the XRPL `Payment` must hold at least `paymentAmountXrp` XRP, otherwise the payment will fail when submitted to the network.
+The `getXrpBalance` helper issues an [`account_info`](https://xrpl.org/account_info.html) request against the validated ledger and returns the wallet's balance in XRP.
+It reuses the caller's `Client` when one is passed in, and otherwise opens and closes its own connection:
+
+```typescript
+export async function getXrpBalance(
+  xrplAddress: string,
+  client?: Client,
+): Promise<number> {
+  const ownsClient = client === undefined;
+  const xrplClient = client ?? new Client(process.env.XRPL_TESTNET_RPC_URL!);
+  if (!xrplClient.isConnected()) {
+    await xrplClient.connect();
+  }
+  try {
+    const response = await xrplClient.request({
+      command: "account_info",
+      account: xrplAddress,
+      ledger_index: "validated",
+    });
+    return Number(dropsToXrp(response.result.account_data.Balance));
+  } finally {
+    if (ownsClient) {
+      await xrplClient.disconnect();
+    }
+  }
+}
+```
+
+The `main` function calls it right after computing `paymentAmountXrp` and aborts before touching XRPL if the wallet is short.
+Failing fast here avoids a half-committed flow where the XRPL submission errors out after the user has already paid gas on Flare for unrelated reads:
+
+```typescript
+const xrpBalance = await getXrpBalance(xrplWallet.address, xrplClient);
+if (xrpBalance < paymentAmountXrp) {
+  throw new Error(
+    `Insufficient XRP balance on ${xrplWallet.address}: have ${xrpBalance} XRP, need ${paymentAmountXrp} XRP`,
+  );
+}
+```
+
+This check covers only the payment amount; the XRPL network also requires the account to keep its base reserve, which is not subtracted here.
+If the wallet's spendable balance is close to the reserve, the payment can still fail with `tecUNFUNDED_PAYMENT` even though this check passes.
+
+## Step 1: Send the hash memo on XRPL
+
+The user-side helper function computes the memo, sends the XRPL `Payment` to the FAssets direct-minting address, and returns everything the executor needs to drive Step 2:
+
+```typescript
+export type HashInstructionUserSide = {
+  xrplTransactionHash: string;
+  /** ABI-encoded PackedUserOperation - bytes the executor delivers via _data. */
+  data: `0x${string}`;
+  /** Sum of call.value across the UserOp; the executor must forward this as msg.value. */
+  totalCallValue: bigint;
+  /** Nonce used in the UserOp; (personalAccount, nonce) identifies the UserOperationExecuted log. */
+  nonce: bigint;
+};
+
+export async function sendHashInstruction({
+  customInstruction,
+  amountXrp,
+  personalAccount,
+  xrplClient,
+  xrplWallet,
+}: {
+  customInstruction: Call[];
+  amountXrp: number;
+  personalAccount: Address;
+  xrplClient: Client;
+  xrplWallet: Wallet;
+}): Promise<HashInstructionUserSide> {
+  const [nonce, coreVaultXrplAddress] = await Promise.all([
+    getNonce(personalAccount),
+    getDirectMintingPaymentAddress(),
+  ]);
+
+  const { memoData, data } = encodeHashInstructionMemo({
+    customInstruction,
+    walletId: 0,
+    executorFeeUBA: 0n,
+    sender: personalAccount,
+    nonce,
+  });
+  const totalCallValue = customInstruction.reduce(
+    (acc, c) => acc + c.value,
+    0n,
+  );
+
+  const transaction = await sendXrplPayment({
+    destination: coreVaultXrplAddress,
+    amount: amountXrp,
+    memos: [{ Memo: { MemoData: memoData.slice(2) } }],
+    wallet: xrplWallet,
+    client: xrplClient,
+  });
+
+  return {
+    xrplTransactionHash: transaction.result.hash,
+    data,
+    totalCallValue,
+    nonce,
+  };
+}
+```
+
+The `data` field carries the full ABI-encoded `PackedUserOperation`.
+This is what the executor must submit on Flare; the XRPL ledger only ever sees the 32-byte hash.
+
+:::warning No destination tags
+XRPL payments targeting smart accounts must not use a destination tag.
+A destination tag forces the FAssets direct minting flow to credit the tag holder, which could let an unrelated party front-run the user's operation.
+:::
+
+## Step 2: Executor submits the proof and the bytes
+
+The executor takes the XRPL transaction hash, waits for the XRPL ledger to confirm it under the required number of validated ledgers (see [Finality](/fdc/attestation-types/xrp-payment#finality) on the `XRPPayment` attestation reference for the exact depth and reasoning), requests an FDC `XRPPayment` attestation, and submits `AssetManagerFXRP.executeDirectMintingWithData` with the proof and the user-operation bytes:
+
+```typescript
+export async function executeDirectMintingWithData({
+  xrplTransactionHash,
+  data,
+  value,
+  xrplClient,
+}: {
+  xrplTransactionHash: string;
+  data: `0x${string}`;
+  value: bigint;
+  xrplClient: Client;
+}): Promise<{ hash: `0x${string}`; receipt: TransactionReceipt }> {
+  const transactionId = (
+    xrplTransactionHash.startsWith("0x")
+      ? xrplTransactionHash
+      : `0x${xrplTransactionHash}`
+  ).toLowerCase() as `0x${string}`;
+
+  // FDC XRPPayment rejects requests whose XRPL transaction isn't yet buried
+  // under XRPL_FDC_CONFIRMATIONS validated ledgers (3 on XRPL ~= 12 s).
+  await waitForXrplFinality({
+    client: xrplClient,
+    transactionHash: xrplTransactionHash,
+  });
+
+  // proofOwner binds the proof to the executor's externally owned account so
+  // the AssetManager's verifyProofOwnership check accepts it on submission.
+  const { abiEncodedRequest } = await prepareXrpPaymentRequest({
+    transactionId,
+    proofOwner: account.address,
+    verifierBaseUrl: process.env.VERIFIER_URL_TESTNET!,
+    apiKey: process.env.VERIFIER_API_KEY_TESTNET!,
+  });
+  const roundId = await submitAttestationRequest(abiEncodedRequest);
+  const proof = await retrieveXrpPaymentProofWithRetry(
+    abiEncodedRequest,
+    roundId,
+  );
+
+  const assetManagerFxrpAddress = await getAssetManagerFXRPAddress();
+  const hash = await walletClient.writeContract({
+    account,
+    address: assetManagerFxrpAddress,
+    abi: iDirectMintingExtAbi,
+    functionName: "executeDirectMintingWithData",
+    args: [proof, data],
+    value,
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { hash, receipt };
+}
+```
+
+Two details are critical here:
+
+- **`proofOwner`**: the FDC `XRPPayment` request binds the proof to the externally owned account that will eventually submit it.
+  `AssetManagerFXRP` enforces this through `TransactionAttestation.verifyProofOwnership`.
+  Pass the executor's address so the proof can only be used by that executor.
+- **`value`**: `msg.value` on `executeDirectMintingWithData` is forwarded `AssetManager -> MasterAccountController.handleMintedFAssets -> PersonalAccount.executeUserOp`.
+  It must therefore equal the sum of `call.value` across the user operation - exactly the `totalCallValue` returned by [Step 1](#step-1-send-the-hash-memo-on-xrpl).
+
+## Step 3: Confirm execution from the receipt
+
+The `MasterAccountController` runs the user operation **inside** the executor's transaction, so `UserOperationExecuted` is already present in the receipt's logs by the time `executeDirectMintingWithData` returns.
+There is no event watcher to start; the script just parses the receipt:
+
+```typescript
+export function findUserOperationExecuted(
+  receipt: TransactionReceipt,
+  personalAccount: Address,
+  nonce: bigint,
+): UserOperationExecutedEventType {
+  const logs = parseEventLogs({
+    abi: iMemoInstructionsFacetAbi,
+    eventName: "UserOperationExecuted",
+    logs: receipt.logs,
+  });
+  for (const log of logs) {
+    const typedLog = log as unknown as UserOperationExecutedEventType;
+    if (
+      typedLog.args.personalAccount.toLowerCase() ===
+        personalAccount.toLowerCase() &&
+      typedLog.args.nonce === nonce
+    ) {
+      return typedLog;
+    }
+  }
+  throw new Error(
+    `UserOperationExecuted not found on receipt ${receipt.transactionHash} ` +
+      `for (${personalAccount}, ${nonce}). The mint may have been delayed; ` +
+      "check for DirectMintingDelayed.",
+  );
+}
+```
+
+The error path matters: if the `AssetManager` hits a rate limit or the minting is otherwise delayed (`DirectMintingDelayed`), the FAsset transfer is deferred and the user operation does not execute synchronously.
+In that case the executor must wait for the delay to clear and re-call `executeDirectMintingWithData`.
+
+## Wiring it Together
+
+The `main` function chains the three steps:
+
+```typescript
+const userSide = await sendHashInstruction({
+  customInstruction,
+  amountXrp: paymentAmountXrp,
+  personalAccount,
+  xrplClient,
+  xrplWallet,
+});
+
+const { receipt } = await executeDirectMintingWithData({
+  xrplTransactionHash: userSide.xrplTransactionHash,
+  data: userSide.data,
+  value: userSide.totalCallValue,
+  xrplClient,
+});
+
+const event = findUserOperationExecuted(
+  receipt,
+  personalAccount,
+  userSide.nonce,
+);
+```
+
+On mainnet, `sendHashInstruction` would run on the user's machine, the `(data, totalCallValue, xrplTransactionHash)` triple would be POST-ed to the executor service, and `executeDirectMintingWithData` would run there.
+`findUserOperationExecuted` can run on either side once the executor publishes the resulting receipt.
+
+## Troubleshooting
+
+### Executor transaction reverted
+
+If `executeDirectMintingWithData` reverts on Flare, inspect the transaction receipt for the revert reason (`InvalidNonce`, `CallFailed`, `CustomInstructionHashMismatch`, and so on).
+The entire call is atomic — **no FXRP is minted** and **no user operation runs**.
+The underlying XRP remains at the [Core Vault](/fassets/core-vault); it is not automatically refunded to the user's XRPL wallet.
+
+See [Failure Handling](/smart-accounts/custom-instruction#failure-handling) for the full list of revert reasons and [Recovery after a failed mint](/smart-accounts/custom-instruction#recovery-after-a-failed-mint) for how to recover via the `0xE0` skip-memo flow.
+
+### `UserOperationExecuted`
+
+If `findUserOperationExecuted` throws but the Flare transaction did not revert, check whether the `AssetManager` emitted [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) instead of completing synchronously.
+When rate limits apply, the executor must wait until `executionAllowedAt` and re-call `executeDirectMintingWithData` — do not send a second XRPL payment with the same nonce.
+
+### Duplicate XRPL payments with the same nonce
+
+A common failure pattern is two XRPL payments submitted in short succession, each embedding a different user operation but both built with the same [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce) value — for example, two withdraw attempts before the first mint finalizes.
+Whichever mint executes first consumes the nonce; the other reverts with [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce), leaving its XRP at the Core Vault.
+
+Wait for the first payment to finalize or confirm failure before building another payment.
+Read a fresh nonce for each new user operation.
+See [Avoiding duplicate-nonce failures](/smart-accounts/custom-instruction#avoiding-duplicate-nonce-failures).
+
+### Recovering FXRP after a failed mint
+
+When `executeDirectMintingWithData` reverts and the XRPL payment is still unminted:
+
+1. Send an XRPL `Payment` with memo opcode **`0xE0` (Skip memo)** targeting the stuck payment's transaction ID.
+2. Have the executor resubmit `executeDirectMintingWithData` with the original FDC proof.
+3. FXRP is minted to the personal account without running the original user operation; the user can then move funds via [FAssets instructions](/smart-accounts/fasset-instructions) or submit a new user operation.
+
+Full protocol details are in [Recovery after a failed mint](/smart-accounts/custom-instruction#recovery-after-a-failed-mint).
+For a step-by-step TypeScript walkthrough, see the [Recover Stuck Mint Transaction guide](/smart-accounts/guides/typescript-viem/recover-stuck-mint-transaction-ts).
+If `0xE0` recovery minted FXRP but left the memo-instruction nonce unchanged, advance it with the [Fast-Forward Nonce guide](/smart-accounts/guides/typescript-viem/fast-forward-nonce-ts) (`0xE1`).
+
+## Full Script
+
+The repository with the example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+Helper functions live in the `src/utils` directory.
+
+<CodeBlock language="typescript" title="src/custom-instructions.ts">
+  {CustomInstructionsScript}
+</CodeBlock>
+
+## Expected output
+
+```bash
+Personal account address: 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F
+
+Payment amount (XRP, net mint + fees): 10.2
+
+XRPL wallet XRP balance: 1000
+
+[hash-instruction-batch] customInstruction: [
+  {
+    target: '0xEE6D54382aA623f4D16e856193f5f8384E487002',
+    value: 0n,
+    data: '0x80abd133'
+  },
+  {
+    target: '0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42',
+    value: 1000000000000000000n,
+    data: '0xd0e30db0'
+  },
+  {
+    target: '0x59D57652BF4F6d97a6e555800b3920Bd775661Dc',
+    value: 1000000000000000000n,
+    data: '0x28d106b20000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c48656c6c6f20576f726c64210000000000000000000000000000000000000000'
+  }
+]
+
+[hash-instruction-batch] current nonce: 58n
+
+[hash-instruction-batch] userOpHash: 0x3f2a3cc369ddaaf39a2837744875a32334ddd1bf067741dc766c905944f33c6d
+
+[hash-instruction-batch] _data (1216 bytes): 0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000fd2f0eb6b9fa4fe5bb1f7b26fee3c647ed103d9f000000000000000000000000000000000000000000000000000000000000003a00000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000140...
+
+[hash-instruction-batch] total call.value (native value to attach on executor tx): 2000000000000000000n
+
+[hash-instruction-batch] XRPL transaction hash: FEAC1ABDB81809293E023DB9345715FA3A27949B23132AB9A2417D8F99A876E9
+
+[hash-instruction-batch] Waiting for XRPL transaction to reach 3 confirmations
+[hash-instruction-batch] XRPL finality reached: 3 confirmations (txLedger=17528566, validated=17528568)
+[hash-instruction-batch] Preparing FDC XRPPayment attestation for txid 0xfeac1abdb81809293e023db9345715fa3a27949b23132ab9a2417d8f99a876e9 (proofOwner=0xF5488132432118596fa13800B68df4C0fF25131d)
+Url: https://fdc-verifiers-testnet.flare.network/verifier/xrp/XRPPayment/prepareRequest
+
+Prepared request:
+ {
+  attestationType: '0x5852505061796d656e7400000000000000000000000000000000000000000000',
+  sourceId: '0x7465737458525000000000000000000000000000000000000000000000000000',
+  requestBody: {
+    transactionId: '0xfeac1abdb81809293e023db9345715fa3a27949b23132ab9a2417d8f99a876e9',
+    proofOwner: '0xF5488132432118596fa13800B68df4C0fF25131d'
+  }
+}
+
+Response status is OK
+
+FDC attestation submitted. Round id: 1342615
+Waiting for FDC round to finalize...
+Round finalized.
+
+[hash-instruction-batch] FDC proof obtained (votingRound=1342615)
+[hash-instruction-batch] Calling executeDirectMintingWithData on 0xc1Ca88b937d0b528842F95d5731ffB586f4fbDFA (value=2000000000000000000)
+[hash-instruction-batch] executeDirectMintingWithData tx: 0x80dbe245bf727959120104ba3e782b3b633a422f17d15ebc4a94c29b7bbd3d7d
+
+UserOperationExecuted: {
+  eventName: 'UserOperationExecuted',
+  args: {
+    personalAccount: '0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F',
+    nonce: 58n
+  },
+  address: '0x434936d47503353f06750db1a444dbdc5f0ad37c',
+  topics: [
+    '0xf1fb8f9b365735a54cdafe3a27ffbad0a0cf1f35454f0c4c0c4dc68591d484fe',
+    '0x000000000000000000000000fd2f0eb6b9fa4fe5bb1f7b26fee3c647ed103d9f'
+  ],
+  data: '0x000000000000000000000000000000000000000000000000000000000000003a',
+  blockNumber: 30741518n,
+  transactionHash: '0x80dbe245bf727959120104ba3e782b3b633a422f17d15ebc4a94c29b7bbd3d7d',
+  transactionIndex: 1,
+  blockHash: '0x9e15f4337d276a75306e5edf058fb7a8aa800006e54d70174e74adcd7c1d63ac',
+  logIndex: 12,
+  removed: false,
+  blockTimestamp: undefined
+}
+```
+
+:::tip What's next?
+
+To continue your Flare Smart Accounts development journey, you can:
+
+- Get the smart account state using the [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts).
+- Read the [Custom Instruction overview](/smart-accounts/custom-instruction) for the on-chain details.
+- Explore the [Memo Field Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/memo-field-custom-instruction-ts).
+- Compare the two flows in the [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison).
+- Dig into the `IMasterAccountController` [reference](/smart-accounts/reference/IMasterAccountController).
+  :::

@@ -1,0 +1,68 @@
+name: New Feed Request
+description: Request a new feed to be added to FTSO
+title: "[req]: <BASE/QUOTE>"
+labels: ["enhancement", "ftso"]
+assignees:
+  - dineshpinto
+body:
+  - type: input
+    id: pair
+    attributes:
+      label: Feed Name
+      placeholder: "FLR/USD"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: asset_class
+    attributes:
+      label: Asset Class
+      description: >
+        Indicate the category of the asset.
+        See https://dev.flare.network/ftso/feeds for more details.
+      options:
+        - Crypto
+        - Forex
+        - Commodity
+        - Stock
+        - Custom Feeds
+    validations:
+      required: true
+
+  - type: textarea
+    id: justification
+    attributes:
+      label: Justification
+      description: Clear and concise explanation of why you are requesting this feed
+      placeholder: "Explain the use case, consumers, and impact."
+    validations:
+      required: true
+
+  - type: textarea
+    id: venues
+    attributes:
+      label: Trading Venues (CeX/DeX/Aggregators)
+      description: Include tickers/symbols per venue. Prefer the most liquid pairs.
+      value: |
+        - Coinbase: FLR/USD
+        - Bybit: FLR/USDT
+        - SparkDEX: FLR/USDT0
+      render: markdown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: volume
+    attributes:
+      label: Daily Volume
+      options: ["<$1M", "$1-10M", "$10-100M", ">$100M"]
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact (Email or Telegram)
+      placeholder: "name@company.com or @handle"
+    validations:
+      required: true

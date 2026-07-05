@@ -10,6 +10,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@flarerail/config": "^0.1.0",
+    "@flarerail/contracts": "^0.1.0",
+    "@flarerail/core": "^0.1.0",
     "fastify": "^5.0.0"
   },
   "devDependencies": {
