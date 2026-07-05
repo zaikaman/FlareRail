@@ -1,0 +1,377 @@
+openapi: 3.1.0
+info:
+  title: FlareRail Partner API
+  version: 0.1.0
+  description: API contract for wallet organizations integrating FlareRail quote, deposit, position, exit, status, webhook, and policy workflows.
+servers:
+  - url: https://api.flarerail.example.com
+    description: Production
+  - url: https://api-test.flarerail.example.com
+    description: Test
+security:
+  - PartnerApiKey: []
+paths:
+  /v1/health:
+    get:
+      summary: Check service health
+      responses:
+        "200":
+          description: Service health state
+  /v1/strategies:
+    get:
+      summary: List available strategies for the authenticated wallet workspace
+      responses:
+        "200":
+          description: Strategy list
+  /v1/quotes:
+    post:
+      summary: Create a pre-commitment quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuoteRequest"
+      responses:
+        "201":
+          description: Quote created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "409":
+          description: Quote unavailable due to capacity, policy, pricing, or strategy status
+  /v1/deposit-intents:
+    post:
+      summary: Create a deposit intent from an available quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDepositIntentRequest"
+      responses:
+        "201":
+          description: Deposit intent created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositIntent"
+        "400":
+          description: Invalid request
+        "409":
+          description: Quote expired, unavailable, or blocked by policy
+  /v1/deposit-intents/{intentId}:
+    get:
+      summary: Get deposit intent status
+      parameters:
+        - $ref: "#/components/parameters/IntentId"
+      responses:
+        "200":
+          description: Deposit intent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositIntent"
+  /v1/positions:
+    get:
+      summary: List positions
+      parameters:
+        - name: xrplAddress
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Position list
+  /v1/positions/{positionId}:
+    get:
+      summary: Get position details
+      parameters:
+        - name: positionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Position
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Position"
+  /v1/exit-intents:
+    post:
+      summary: Create an exit intent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExitIntentRequest"
+      responses:
+        "201":
+          description: Exit intent created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExitIntent"
+        "409":
+          description: Position not eligible or policy blocks exit route
+  /v1/exit-intents/{intentId}:
+    get:
+      summary: Get exit intent status
+      parameters:
+        - $ref: "#/components/parameters/IntentId"
+      responses:
+        "200":
+          description: Exit intent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExitIntent"
+  /v1/events:
+    get:
+      summary: Search lifecycle events
+      parameters:
+        - name: subjectId
+          in: query
+          schema:
+            type: string
+        - name: traceId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lifecycle event list
+  /v1/webhook-endpoints:
+    post:
+      summary: Register a webhook endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWebhookEndpointRequest"
+      responses:
+        "201":
+          description: Webhook endpoint registered
+  /v1/policies:
+    get:
+      summary: Get active wallet policy
+      responses:
+        "200":
+          description: Active policy
+    put:
+      summary: Update wallet policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RiskPolicy"
+      responses:
+        "200":
+          description: Updated policy
+  /v1/incidents:
+    get:
+      summary: List incidents affecting the wallet workspace
+      responses:
+        "200":
+          description: Incident list
+components:
+  securitySchemes:
+    PartnerApiKey:
+      type: http
+      scheme: bearer
+  parameters:
+    IntentId:
+      name: intentId
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    CreateQuoteRequest:
+      type: object
+      required: [xrplAddress, amount, strategyCode]
+      properties:
+        xrplAddress:
+          type: string
+        walletUserRef:
+          type: string
+        amount:
+          type: string
+        strategyCode:
+          type: string
+    Quote:
+      type: object
+      required: [id, status, amount, strategyCode, expiresAt]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [available, unavailable, expired]
+        amount:
+          type: string
+        expectedOutput:
+          type: string
+        strategyCode:
+          type: string
+        feeSummary:
+          $ref: "#/components/schemas/FeeSummary"
+        expiresAt:
+          type: string
+          format: date-time
+        reasonCode:
+          type: string
+        userMessage:
+          type: string
+    CreateDepositIntentRequest:
+      type: object
+      required: [quoteId]
+      properties:
+        quoteId:
+          type: string
+        idempotencyKey:
+          type: string
+    DepositIntent:
+      type: object
+      required: [id, status, traceId, createdAt]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [created, awaiting_user_action, observed, activating, active_position_created, expired, failed, cancelled]
+        traceId:
+          type: string
+        userInstructions:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserInstruction"
+        reasonCode:
+          type: string
+        userMessage:
+          type: string
+        externalReferences:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalReference"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Position:
+      type: object
+      required: [id, status, strategyCode, activeAmount]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [active, exiting, impaired, recovery_available, closed]
+        strategyCode:
+          type: string
+        activeAmount:
+          type: string
+        valuation:
+          type: string
+        exitEligible:
+          type: boolean
+    CreateExitIntentRequest:
+      type: object
+      required: [positionId, amount, destination]
+      properties:
+        positionId:
+          type: string
+        amount:
+          type: string
+        destination:
+          type: string
+        idempotencyKey:
+          type: string
+    ExitIntent:
+      type: object
+      required: [id, status, traceId]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [created, pending_user_confirmation, submitted, processing, delayed, completed, recoverable_failure, compensated, escalated, rejected, expired, failed]
+        traceId:
+          type: string
+        expectedTiming:
+          type: string
+        reasonCode:
+          type: string
+        userMessage:
+          type: string
+        externalReferences:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalReference"
+    RiskPolicy:
+      type: object
+      properties:
+        enabledStrategyCodes:
+          type: array
+          items:
+            type: string
+        perUserExposureLimit:
+          type: string
+        organizationExposureLimit:
+          type: string
+        emergencyPaused:
+          type: boolean
+    CreateWebhookEndpointRequest:
+      type: object
+      required: [url, eventTypes]
+      properties:
+        url:
+          type: string
+        eventTypes:
+          type: array
+          items:
+            type: string
+    UserInstruction:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    FeeSummary:
+      type: object
+      properties:
+        total:
+          type: string
+        currency:
+          type: string
+        lines:
+          type: array
+          items:
+            type: object
+    ExternalReference:
+      type: object
+      properties:
+        type:
+          type: string
+        value:
+          type: string
+        url:
+          type: string

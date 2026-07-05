@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Build a production-ready API-first wallet infrastructure product, with a thin SDK wrapper, that lets XRPL wallets integrate Flare-powered XRP yield, FXRP minting, strategy routing, redemption, status tracking, and developer-facing operational visibility."
+**Input**: User description: "Build a production-ready API-first wallet infrastructure product, with a thin SDK wrapper and first-class partner dashboard, that lets XRPL wallets integrate Flare-powered XRP yield, FXRP minting, strategy routing, redemption, status tracking, and developer-facing operational visibility."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -42,9 +42,9 @@ An XRP holder whose position was created through a wallet can request exit back 
 
 ---
 
-### User Story 3 - Wallet monitors users and operational health (Priority: P2)
+### User Story 3 - Wallet monitors users and operational health in a dashboard (Priority: P2)
 
-A wallet operations team can view all user intents, positions, strategy capacity, proof status, pricing, incidents, and user-impacting delays from a dashboard suitable for production support.
+A wallet operations team can use a first-class dashboard to view all user intents, positions, strategy capacity, proof status, pricing, incidents, and user-impacting delays for production support.
 
 **Why this priority**: Production wallet partners need supportability, not just happy-path transaction orchestration. This reduces support tickets and makes incidents auditable.
 
@@ -116,7 +116,7 @@ A wallet can configure risk limits, supported strategies, geographic or policy r
 - **FR-009**: Each exit intent MUST communicate expected native XRP destination, expected timing, fees, current stage, completion references, and failure or recovery state.
 - **FR-010**: The system MUST detect and represent recoverable redemption failures, including missed underlying payment windows, and expose compensation or escalation status in a way wallet support teams can explain to users.
 - **FR-011**: The system MUST maintain an auditable lifecycle history for every quote, deposit intent, exit intent, position, status update, policy decision, and operator action.
-- **FR-012**: The system MUST provide wallet-level operational dashboards for searching users, intents, positions, statuses, incidents, strategy availability, pricing, and exposure.
+- **FR-012**: The system MUST provide a first-class wallet-level operational dashboard for searching users, intents, positions, statuses, incidents, strategy availability, pricing, and exposure.
 - **FR-013**: The system MUST provide programmatic status retrieval and event notifications for quote, intent, position, incident, and policy state changes.
 - **FR-014**: The system MUST ensure event notifications are traceable, retryable, and safe for wallets to process more than once without duplicating user-facing actions.
 - **FR-015**: The system MUST provide human-readable reason codes and remediation guidance for failed, delayed, expired, rejected, or paused flows.
@@ -161,7 +161,7 @@ A wallet can configure risk limits, supported strategies, geographic or policy r
 
 ## Assumptions
 
-- The initial product is API-first for wallet organizations, with a thin developer client wrapper and a hosted dashboard for operations.
+- The initial product is API-first for wallet organizations, with a thin developer client wrapper and a hosted dashboard treated as a first-class production surface for operations, partner onboarding, and hackathon demonstration.
 - The initial partner user is an XRPL wallet or XRP application that already has a user relationship and can present signing or payment instructions to the user.
 - Users interact primarily through the partner wallet, while FlareRail provides status, orchestration, disclosures, and recovery visibility.
 - Conservative supported strategies will launch first, and unsupported or degraded strategies will be unavailable for new deposits while exits remain visible.
