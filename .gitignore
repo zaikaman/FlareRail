@@ -1,2 +1,13 @@
 developer-hub
 .env
+
+# Standard project ignores
+node_modules
+.next
+.vercel
+dist
+coverage
+.env.*
+!.env.example
+*.log
+.DS_Store

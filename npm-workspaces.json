@@ -1,0 +1,36 @@
+{
+  "description": "FlareRail npm workspace registry — documents each workspace package for humans and tooling.",
+  "workspaces": {
+    "apps/api": {
+      "name": "@flarerail/api",
+      "role": "Fastify partner API",
+      "deploy": "Heroku"
+    },
+    "apps/dashboard": {
+      "name": "@flarerail/dashboard",
+      "role": "Next.js dashboard",
+      "deploy": "Vercel"
+    },
+    "apps/worker": {
+      "name": "@flarerail/worker",
+      "role": "Heroku worker process",
+      "deploy": "Heroku"
+    },
+    "packages/core": {
+      "name": "@flarerail/core",
+      "role": "shared domain, state machines, validation, reason codes"
+    },
+    "packages/sdk": {
+      "name": "@flarerail/sdk",
+      "role": "TypeScript partner SDK"
+    },
+    "packages/contracts": {
+      "name": "@flarerail/contracts",
+      "role": "ABIs, addresses, Flare/XRPL provider interfaces"
+    },
+    "packages/config": {
+      "name": "@flarerail/config",
+      "role": "shared env/config loader"
+    }
+  }
+}

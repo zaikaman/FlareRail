@@ -1,0 +1,11 @@
+node_modules
+dist
+.next
+coverage
+*.log
+AGENTS.md
+hackathon.md
+.agents
+.specify
+specs
+developer-hub

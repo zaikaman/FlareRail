@@ -1,0 +1,2 @@
+- The developer-hub folder contains all Flare Network docs, but it's read-only, do not edit it.
+- All code written must be production ready, no fake or mock code or hardcoding.

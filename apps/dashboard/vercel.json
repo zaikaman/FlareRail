@@ -1,0 +1,9 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build --workspace @flarerail/dashboard",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_FLARERAIL_API_URL": "",
+    "NEXT_PUBLIC_APP_ENV": ""
+  }
+}
